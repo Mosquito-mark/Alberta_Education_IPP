@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,12 +15,28 @@ import { Goal } from "@/types";
 
 interface GoalManagerProps {
   goals: Goal[];
-  newGoal: { description: string; targetDate: string; subjectArea: string };
+  newGoal: { 
+    description: string; 
+    targetDate: string; 
+    subjectArea: string;
+    obj1Desc?: string;
+    obj1Assess?: string;
+    obj1Prog?: string;
+    obj2Desc?: string;
+    obj2Assess?: string;
+    obj2Prog?: string;
+    obj3Desc?: string;
+    obj3Assess?: string;
+    obj3Prog?: string;
+    accommodations?: string;
+  };
   setNewGoal: (goal: any) => void;
   handleAddGoal: (e: React.FormEvent) => void;
   handleSuggestGoal: () => void;
+  handleSuggestObjectives: () => void;
   handleUpdateGoalStatus: (goalId: number, status: string) => void;
   isSuggesting: boolean;
+  isSuggestingObjectives: boolean;
   metadata: any;
 }
 
@@ -29,18 +46,24 @@ export function GoalManager({
   setNewGoal,
   handleAddGoal,
   handleSuggestGoal,
+  handleSuggestObjectives,
   handleUpdateGoalStatus,
   isSuggesting,
+  isSuggestingObjectives,
   metadata
 }: GoalManagerProps) {
   return (
-    <Card>
+    <Card className="rounded-none border shadow-sm border-t-8 border-t-goa-sky">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <CardTitle>Measurable Goals (SMART)</CardTitle>
+          <CardTitle className="text-xl font-bold text-primary">Measurable Goals (SMART)</CardTitle>
           <Tooltip>
-            <TooltipTrigger render={<Button variant="ghost" size="icon" className="h-6 w-6 rounded-full"><Info className="w-4 h-4 text-muted-foreground" /></Button>} />
-            <TooltipContent className="max-w-xs">
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-none" aria-label="Information about SMART goals">
+                <Info className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs rounded-none border-border">
               <p><strong>SMART Goals:</strong></p>
               <ul className="list-disc pl-4 mt-1 space-y-1">
                 <li><strong>S</strong>pecific</li>
@@ -52,17 +75,21 @@ export function GoalManager({
             </TooltipContent>
           </Tooltip>
         </div>
-        <CardDescription>Specific, achievable, relevant, and time-bound goals.</CardDescription>
+        <CardDescription className="text-foreground font-medium">Specific, achievable, relevant, and time-bound goals for the Individual Program Plan.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={handleAddGoal} className="space-y-4 border p-4 rounded-lg bg-neutral-50">
+        <form onSubmit={handleAddGoal} className="space-y-4 border p-4 rounded-none bg-muted/30 border-border">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Label>Goal Description</Label>
+                <Label htmlFor="goal-description" className="text-primary font-bold text-xs uppercase tracking-widest">Goal Description</Label>
                 <Tooltip>
-                  <TooltipTrigger render={<Button variant="ghost" size="icon" className="h-5 w-5 rounded-full"><Info className="w-3.5 h-3.5 text-muted-foreground" /></Button>} />
-                  <TooltipContent className="max-w-xs">
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-none" aria-label="SMART goal criteria details">
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs rounded-none border-border">
                     <p><strong>SMART Goals:</strong></p>
                     <ul className="list-disc pl-4 mt-1 space-y-1 text-sm">
                       <li><strong>S</strong>pecific</li>
@@ -80,32 +107,36 @@ export function GoalManager({
                 size="sm" 
                 onClick={handleSuggestGoal} 
                 disabled={isSuggesting}
-                className="h-8 text-xs"
+                className="h-8 text-[10px] uppercase tracking-widest font-bold rounded-none border-primary/30 text-primary hover:bg-primary/5"
+                aria-label="Use AI to suggest a SMART goal based on student observations"
               >
                 {isSuggesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
                 Suggest AI Goal
               </Button>
             </div>
             <Textarea 
+              id="goal-description"
               required 
               minLength={10}
               placeholder="E.g., By the end of the term, the student will..." 
               value={newGoal.description} 
               onChange={e => setNewGoal({...newGoal, description: e.target.value})} 
+              className="rounded-none border-border focus:border-goa-sky"
+              aria-describedby="goal-help"
             />
-            <p className="text-xs text-muted-foreground">Must be at least 10 characters.</p>
+            <p id="goal-help" className="text-[10px] text-muted-foreground font-medium">Must be at least 10 characters. Describe a specific, measurable outcome.</p>
           </div>
-          <div className="flex gap-4 items-end">
-            <div className="space-y-2 flex-1">
-              <Label>Subject Area</Label>
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="space-y-2 flex-1 w-full">
+              <Label htmlFor="goal-subject" className="text-primary font-bold text-xs uppercase tracking-widest">Subject Area</Label>
               <Select 
                 value={newGoal.subjectArea} 
                 onValueChange={(val) => setNewGoal({...newGoal, subjectArea: val})}
               >
-                <SelectTrigger render={<Button variant="outline" className="w-full justify-between" />}>
+                <SelectTrigger id="goal-subject" className="w-full justify-between rounded-none border-border focus:border-goa-sky" aria-label="Select subject area for this goal">
                   <SelectValue placeholder="Select Area" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-none border-border">
                   <SelectItem value="General">General</SelectItem>
                   {metadata?.subjects?.map((s: any) => (
                     <SelectItem key={s.Core_Subject_Area} value={s.Core_Subject_Area}>
@@ -115,54 +146,135 @@ export function GoalManager({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 flex-1">
-              <Label>Target Date</Label>
+            <div className="space-y-2 flex-1 w-full">
+              <Label htmlFor="goal-date" className="text-primary font-bold text-xs uppercase tracking-widest">Target Date</Label>
               <Popover>
-                <PopoverTrigger render={<Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newGoal.targetDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" /> {newGoal.targetDate ? format(new Date(newGoal.targetDate), "PPP") : <span>Pick a date</span>}</Button>} />
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverTrigger asChild>
+                  <Button id="goal-date" variant="outline" className={cn("w-full justify-start text-left font-normal rounded-none border-border focus:border-goa-sky", !newGoal.targetDate && "text-muted-foreground")} aria-label="Select target date for goal completion">
+                    <CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" /> {newGoal.targetDate ? format(new Date(newGoal.targetDate), "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-none border-border" align="start">
                   <Calendar
                     mode="single"
                     selected={newGoal.targetDate ? new Date(newGoal.targetDate) : undefined}
                     onSelect={(date) => setNewGoal({...newGoal, targetDate: date ? format(date, "yyyy-MM-dd") : ""})}
                     initialFocus
+                    className="rounded-none"
                   />
                 </PopoverContent>
               </Popover>
             </div>
-            <Button type="submit"><Plus className="w-4 h-4 mr-2" /> Add Goal</Button>
+          </div>
+
+          <div className="space-y-4 border-t border-border pt-4 mt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <h4 className="text-sm font-bold text-primary uppercase tracking-widest">Short-Term Objectives</h4>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSuggestObjectives} 
+                disabled={isSuggestingObjectives || !newGoal.description || !newGoal.subjectArea || !newGoal.targetDate}
+                className="h-8 text-[10px] uppercase tracking-widest font-bold rounded-none border-primary/30 text-primary hover:bg-primary/5"
+                aria-label="Use AI to suggest short-term objectives based on the goal description"
+              >
+                {isSuggestingObjectives ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                Suggest Objectives
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-primary">Objective 1</Label>
+                <Input placeholder="Description" value={newGoal.obj1Desc || ""} onChange={e => setNewGoal({...newGoal, obj1Desc: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Assessment Procedure" value={newGoal.obj1Assess || ""} onChange={e => setNewGoal({...newGoal, obj1Assess: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Progress Review" value={newGoal.obj1Prog || ""} onChange={e => setNewGoal({...newGoal, obj1Prog: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-primary">Objective 2</Label>
+                <Input placeholder="Description" value={newGoal.obj2Desc || ""} onChange={e => setNewGoal({...newGoal, obj2Desc: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Assessment Procedure" value={newGoal.obj2Assess || ""} onChange={e => setNewGoal({...newGoal, obj2Assess: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Progress Review" value={newGoal.obj2Prog || ""} onChange={e => setNewGoal({...newGoal, obj2Prog: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-primary">Objective 3</Label>
+                <Input placeholder="Description" value={newGoal.obj3Desc || ""} onChange={e => setNewGoal({...newGoal, obj3Desc: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Assessment Procedure" value={newGoal.obj3Assess || ""} onChange={e => setNewGoal({...newGoal, obj3Assess: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+                <Input placeholder="Progress Review" value={newGoal.obj3Prog || ""} onChange={e => setNewGoal({...newGoal, obj3Prog: e.target.value})} className="rounded-none border-border focus:border-goa-sky text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t border-border pt-4 mt-4">
+            <Label htmlFor="goal-accommodations" className="text-primary font-bold text-xs uppercase tracking-widest">Accommodations & Strategies</Label>
+            <Textarea 
+              id="goal-accommodations"
+              placeholder="Accommodations and strategies to support this goal..." 
+              value={newGoal.accommodations || ""} 
+              onChange={e => setNewGoal({...newGoal, accommodations: e.target.value})} 
+              className="rounded-none border-border focus:border-goa-sky"
+            />
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button type="submit" className="bg-goa-sky hover:bg-goa-sky/90 text-white rounded-none w-full md:w-auto font-bold uppercase tracking-widest text-xs h-10" aria-label="Add this goal to the student's plan">
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" /> Add Goal
+            </Button>
           </div>
         </form>
 
         <div className="space-y-4">
           {goals.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
-              <Target className="w-8 h-8 mx-auto mb-2 opacity-20" />
-              No goals defined yet.
+            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-none border-border">
+              <Target className="w-10 h-10 mx-auto mb-2 opacity-20" aria-hidden="true" />
+              <p className="text-sm font-medium">No goals defined yet for this student.</p>
             </div>
           ) : (
             goals.map((goal) => (
-              <div key={goal.Goal_ID} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start gap-4">
-                  <span className="font-medium">{goal.Goal_Description}</span>
+              <div key={goal.Goal_ID} className="border rounded-none p-4 space-y-2 border-border hover:border-primary/30 transition-colors bg-card shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                  <span className="font-bold text-foreground">{goal.Goal_Description}</span>
                   <Select value={goal.Status} onValueChange={(val) => handleUpdateGoalStatus(goal.Goal_ID, val)}>
-                    <SelectTrigger render={<Button variant="outline" className="w-[140px] h-8 text-xs justify-between" />}>
+                    <SelectTrigger className="w-[140px] h-8 text-[10px] font-bold uppercase tracking-widest justify-between rounded-none border-border focus:border-goa-sky" aria-label={`Update status for goal: ${goal.Goal_Description}`}>
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-none border-border">
                       <SelectItem value="Not Started">Not Started</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                <div className="flex justify-between items-center text-xs text-foreground">
                   <div className="flex items-center gap-4">
-                    <span>Target Date: {goal.Target_Date}</span>
-                    <span className="bg-primary/5 text-primary/70 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                    <span className="flex items-center gap-1 font-medium">
+                      <CalendarIcon className="w-3 h-3" aria-hidden="true" />
+                      Target: {goal.Target_Date}
+                    </span>
+                    <span className="bg-goa-sky/10 text-primary px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider border border-goa-sky/20">
                       {goal.Core_Subject_Area || "General"}
                     </span>
                   </div>
                 </div>
+                
+                {(goal.Objective_1_Description || goal.Objective_2_Description || goal.Objective_3_Description) && (
+                  <div className="mt-4 pt-4 border-t border-border space-y-2">
+                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-primary">Short-Term Objectives</h5>
+                    <ul className="text-xs space-y-1 list-disc pl-4 text-muted-foreground">
+                      {goal.Objective_1_Description && <li>{goal.Objective_1_Description}</li>}
+                      {goal.Objective_2_Description && <li>{goal.Objective_2_Description}</li>}
+                      {goal.Objective_3_Description && <li>{goal.Objective_3_Description}</li>}
+                    </ul>
+                  </div>
+                )}
+                
+                {goal.Goal_Accommodations_Strategies && (
+                  <div className="mt-2 space-y-1">
+                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-primary">Accommodations & Strategies</h5>
+                    <p className="text-xs text-muted-foreground">{goal.Goal_Accommodations_Strategies}</p>
+                  </div>
+                )}
               </div>
             ))
           )}

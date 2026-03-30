@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -113,18 +114,19 @@ export default function ObservationHub() {
   };
 
   const handleScrub = async () => {
-    if (!rawDictation || !formData.Core_Subject_Area) {
-      toast.error("Missing fields", { description: "Please provide dictation and select a subject area." });
+    if (!rawDictation) {
+      toast.error("Missing dictation", { description: "Please provide raw dictation." });
       return;
     }
     setIsScrubbing(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const subjectContext = formData.Core_Subject_Area ? `\nSubject Area: ${formData.Core_Subject_Area}` : "";
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Raw dictation: "${rawDictation}"\nSubject Area: ${formData.Core_Subject_Area}`,
+        contents: `Raw dictation: "${rawDictation}"${subjectContext}`,
         config: {
-          systemInstruction: "You are an optimistic Alberta educational assistant. Review the raw teacher dictation. Identify any negative, deficit-based language and rewrite the observation using affirmative, pedagogical, strengths-based language mapped to the selected Alberta K-12 Subject Area. Do not invent curriculum. Return ONLY the rewritten text.",
+          systemInstruction: "You are an optimistic educational assistant. Review the raw teacher dictation. Identify any negative, deficit-based language and rewrite the observation using affirmative, pedagogical, strengths-based language. If a subject area is provided, map it to that K-12 Subject Area. Do not invent curriculum. Return ONLY the rewritten text.",
         }
       });
       
@@ -184,19 +186,19 @@ export default function ObservationHub() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <div className="bg-white p-8 rounded-xl border shadow-sm">
-        <h1 className="text-4xl font-black tracking-tight text-primary uppercase">Observation Hub</h1>
-        <p className="text-muted-foreground text-lg">Capture strengths-based evidence in real-time • EPSB District</p>
+      <div className="bg-white p-8 rounded-none border-l-8 border-l-goa-sky border shadow-sm">
+        <h1 className="text-3xl font-bold tracking-tight text-goa-sky-text">Observation Hub</h1>
+        <p className="text-goa-stone-mid text-base mt-1 font-medium">Capture strengths-based evidence in real-time for Pathway Pilot compliance.</p>
       </div>
 
-      <div className="bg-white border rounded-xl p-8 shadow-md space-y-6 border-t-4 border-t-primary">
+      <div className="bg-white border rounded-none p-8 shadow-md space-y-6 border-t-8 border-t-goa-sky">
         <div className="space-y-2">
-          <Label className="text-primary font-bold text-xs uppercase tracking-widest">Select Student</Label>
+          <Label htmlFor="student-select" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Select Student</Label>
           <Select value={formData.Student_ID} onValueChange={(v) => setFormData({...formData, Student_ID: v})}>
-            <SelectTrigger className="h-12 border-primary/20 focus:ring-primary">
+            <SelectTrigger id="student-select" className="h-12 border-goa-stone-light/50 focus:ring-goa-sky rounded-none text-black" aria-label="Select a student for the observation">
               <SelectValue placeholder="Choose a student..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-none">
               {students.map(s => (
                 <SelectItem key={s.Student_ID} value={s.Student_ID}>{s.First_Name} {s.Last_Initial}. ({s.Grade_Level})</SelectItem>
               ))}
@@ -205,35 +207,51 @@ export default function ObservationHub() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label className="text-primary font-bold text-xs uppercase tracking-widest">Raw Dictation</Label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <Label htmlFor="raw-dictation" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Raw Dictation</Label>
             <Button 
               type="button" 
               variant={isRecording ? "destructive" : "secondary"} 
               size="sm" 
               onClick={toggleRecording}
-              className={`rounded-full px-4 font-bold ${!isRecording ? "bg-secondary text-primary hover:bg-secondary/80" : ""}`}
+              className={`rounded-none px-4 font-bold uppercase tracking-widest text-[10px] ${!isRecording ? "bg-goa-prairie text-goa-stone-dark hover:bg-goa-prairie/80" : ""}`}
+              aria-label={isRecording ? "Stop voice recording" : "Start voice recording for dictation"}
             >
               <Mic className={`w-4 h-4 mr-2 ${isRecording ? "animate-pulse" : ""}`} />
               {isRecording ? "Stop Dictation" : "Start Dictation"}
             </Button>
           </div>
           <Textarea 
+            id="raw-dictation"
             placeholder="E.g., He refused to write the essay again, got distracted, but finally built a timeline in Comic Life."
             value={rawDictation}
             onChange={(e) => setRawDictation(e.target.value)}
-            className="min-h-[120px] font-mono text-sm bg-neutral-50 border-primary/10 focus-visible:ring-primary"
+            className="min-h-[120px] font-mono text-sm bg-neutral-50 border-goa-stone-light/50 focus-visible:ring-goa-sky rounded-none text-black"
+            aria-describedby="dictation-help"
           />
+          <p id="dictation-help" className="text-[10px] text-goa-stone-mid font-medium">Type or use voice dictation to record initial observations.</p>
+          
+          <div className="pt-2">
+            <Button 
+              onClick={handleScrub} 
+              disabled={isScrubbing || !rawDictation}
+              className="w-full bg-goa-sky hover:bg-goa-sky/90 text-white h-12 text-sm font-bold uppercase tracking-widest shadow-md rounded-none"
+              aria-label="Process raw dictation using AI to create a strengths-based observation"
+            >
+              {isScrubbing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Use Goal Strengths First Format
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label className="text-primary font-bold text-xs uppercase tracking-widest">Core Subject Area</Label>
+            <Label htmlFor="subject-area" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Core Subject Area</Label>
             <Select value={formData.Core_Subject_Area} onValueChange={(v) => setFormData({...formData, Core_Subject_Area: v})}>
-              <SelectTrigger className="border-primary/20">
+              <SelectTrigger id="subject-area" className="border-goa-stone-light/50 rounded-none text-black" aria-label="Select core subject area">
                 <SelectValue placeholder="Select Subject" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-none">
                 {metadata.subjects?.map((s: any) => (
                   <SelectItem key={s.Core_Subject_Area} value={s.Core_Subject_Area}>{s.Core_Subject_Area}</SelectItem>
                 ))}
@@ -241,12 +259,12 @@ export default function ObservationHub() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-primary font-bold text-xs uppercase tracking-widest">Outcome Grade Level</Label>
+            <Label htmlFor="grade-level-select" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Outcome Grade Level</Label>
             <Select value={formData.Outcome_Grade_Level} onValueChange={(v) => setFormData({...formData, Outcome_Grade_Level: v})}>
-              <SelectTrigger className="border-primary/20">
+              <SelectTrigger id="grade-level-select" className="border-goa-stone-light/50 rounded-none text-black" aria-label="Select outcome grade level">
                 <SelectValue placeholder="Select Grade" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-none">
                 {["Gr.1", "Gr.2", "Gr.3", "Gr.4", "Gr.5", "Gr.6", "Gr.7", "Gr.8", "Gr.9"].map(g => (
                   <SelectItem key={g} value={g}>{g}</SelectItem>
                 ))}
@@ -254,12 +272,12 @@ export default function ObservationHub() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-primary font-bold text-xs uppercase tracking-widest">Evaluation Status</Label>
+            <Label htmlFor="evaluation-status" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Evaluation Status</Label>
             <Select value={formData.Evaluation_Status} onValueChange={(v) => setFormData({...formData, Evaluation_Status: v})}>
-              <SelectTrigger className="border-primary/20">
+              <SelectTrigger id="evaluation-status" className="border-goa-stone-light/50 rounded-none text-black" aria-label="Select evaluation status">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-none">
                 {metadata.evaluationStatuses?.map((s: any) => (
                   <SelectItem key={s.Evaluation_Status} value={s.Evaluation_Status}>{s.Evaluation_Status}</SelectItem>
                 ))}
@@ -269,12 +287,12 @@ export default function ObservationHub() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-primary font-bold text-xs uppercase tracking-widest">Recommended Assistive Tech (UDL Tool)</Label>
+          <Label htmlFor="assistive-tech" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Recommended Assistive Tech (UDL Tool)</Label>
           <Select value={formData.Recommended_Assistive_Tech} onValueChange={(v) => setFormData({...formData, Recommended_Assistive_Tech: v})}>
-            <SelectTrigger className="border-primary/20">
+            <SelectTrigger id="assistive-tech" className="border-goa-stone-light/50 rounded-none text-black" aria-label="Select recommended assistive technology">
               <SelectValue placeholder="Select Tool" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-none">
               {metadata.assistiveTechs?.map((s: any) => (
                 <SelectItem key={s.Recommended_Assistive_Tech} value={s.Recommended_Assistive_Tech}>{s.Recommended_Assistive_Tech}</SelectItem>
               ))}
@@ -283,7 +301,7 @@ export default function ObservationHub() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-primary font-bold text-xs uppercase tracking-widest">Multimedia Evidence (Optional)</Label>
+          <Label htmlFor="image-upload" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">Multimedia Evidence (Optional)</Label>
           <div className="flex items-center gap-4">
             <input 
               type="file" 
@@ -291,36 +309,33 @@ export default function ObservationHub() {
               accept="image/*" 
               className="hidden" 
               onChange={(e) => setFormData({...formData, Image: e.target.files?.[0] || null})} 
+              aria-label="Upload image evidence for this observation"
             />
-            <Label htmlFor="image-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-primary/20 bg-background hover:bg-primary/5 text-primary h-12 px-4 py-2 w-full">
-              <ImageIcon className="w-5 h-5 mr-2" /> 
+            <Label htmlFor="image-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-none text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-goa-stone-light/50 bg-background hover:bg-goa-sky/5 text-black h-12 px-4 py-2 w-full" title="Upload a photo as evidence for the observation">
+              <ImageIcon className="w-5 h-5 mr-2" aria-hidden="true" /> 
               {formData.Image ? formData.Image.name : "Upload Photo Evidence"}
             </Label>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-primary/10">
-          <Button 
-            onClick={handleScrub} 
-            disabled={isScrubbing || !rawDictation || !formData.Core_Subject_Area}
-            className="w-full bg-primary hover:bg-primary/90 text-white h-14 text-lg font-black uppercase tracking-widest shadow-lg"
-          >
-            {isScrubbing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-            AI Strengths-First Scrub
-          </Button>
-        </div>
-
         {scrubbedText && (
-          <div className="space-y-4 pt-6 border-t border-primary/10 animate-in fade-in slide-in-from-bottom-4">
+          <div className="space-y-4 pt-6 border-t border-goa-stone-light/30 animate-in fade-in slide-in-from-bottom-4">
             <div className="space-y-2">
-              <Label className="text-primary font-black text-xs uppercase tracking-widest">AI Draft (Strengths-Based)</Label>
+              <Label htmlFor="scrubbed-text" className="text-goa-sky-text font-bold text-xs uppercase tracking-widest">AI Draft (Strengths-Based)</Label>
               <Textarea 
+                id="scrubbed-text"
                 value={scrubbedText}
                 onChange={(e) => setScrubbedText(e.target.value)}
-                className="min-h-[120px] border-primary/20 focus-visible:ring-primary font-medium"
+                className="min-h-[120px] border-goa-stone-light/50 focus-visible:ring-goa-sky font-medium rounded-none text-black"
+                aria-label="Review and edit the AI-generated strengths-based observation"
               />
             </div>
-            <Button onClick={handleSubmit} className="w-full bg-secondary text-primary font-black h-14 text-lg uppercase tracking-widest hover:bg-secondary/90 shadow-md" size="lg">
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full bg-goa-prairie text-goa-stone-dark font-bold h-14 text-lg uppercase tracking-widest hover:bg-goa-prairie/90 shadow-md rounded-none" 
+              size="lg"
+              aria-label="Save the finalized observation to the student's Individual Program Plan"
+            >
               Save Observation to IPP
             </Button>
           </div>

@@ -1,218 +1,285 @@
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 
 export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEvaluations: any[], assessments: any[] = []) => {
-  // Check compliance: Must have at least one Access or Expression accommodation
-  const hasUDL = logs.some((log: any) => log.UDL_Purpose === "Access" || log.UDL_Purpose === "Expression" || log.UDL_Purpose === "Access & Expression");
-  
-  if (!hasUDL && logs.length > 0) {
-    toast.error("Export Blocked", { description: "Zero 'Access' or 'Expression' accommodations selected. Please front-load the environment first." });
-    return;
-  }
-
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  
-  // Header & Confidentiality
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  let y = margin;
+
+  // --- PAGE 1: Child Information & Background ---
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("Individualized Program Plan (IPP)", pageWidth / 2, 20, { align: "center" });
+  doc.text("Individualized Program Plan", pageWidth / 2, 25, { align: "center" });
   
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(100);
-  doc.text("CONFIDENTIAL DOCUMENT: For use by the Educational Support Team only.", pageWidth / 2, 26, { align: "center" });
-  doc.setTextColor(0);
+  y = 35;
   
-  // Student Info Block
-  doc.setDrawColor(200);
-  doc.line(20, 32, 190, 32);
-  
+  // Section: Child Information
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("STUDENT INFORMATION", 20, 42);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  
-  // Left Column
-  doc.text(`Name: ${student.First_Name} ${student.Last_Initial}.`, 20, 50);
-  doc.text(`Student ID: ${student.Student_ID}`, 20, 56);
-  doc.text(`Date of Birth: ${student.Date_of_Birth || "N/A"}`, 20, 62);
-  doc.text(`Eligibility Code: ${student.Eligibility_Code || "N/A"}`, 20, 68);
-  doc.text(`Parents: ${student.Parents_Names || "N/A"}`, 20, 74);
-  
-  // Right Column
-  doc.text(`Grade Level: ${student.Grade_Level}`, 110, 50);
-  doc.text(`Status: ${student.Transition_Plan_Status}`, 110, 56);
-  doc.text(`School/Program: ${student.School_Program || "Edmonton Public Schools"}`, 110, 62);
-  doc.text(`IPP Created: ${student.Date_IPP_Created || "N/A"}`, 110, 68);
-  doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 110, 74);
-
-  let y = 85;
-
-  // Educational Team
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("EDUCATIONAL SUPPORT TEAM", 20, y);
-  y += 8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Teacher: ${student.Teacher_Name || "N/A"}`, 20, y);
-  doc.text(`Coordinator: ${student.IPP_Coordinator || "N/A"}`, 110, y);
+  doc.text("Child Information", margin, y);
   y += 6;
-  doc.text(`Administrator: ${student.Program_Administrator || "N/A"}`, 20, y);
-  y += 10;
-
-  // Specialized Assessments
-  if (assessments.length > 0) {
-    if (y > 240) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("SPECIALIZED ASSESSMENTS", 20, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    assessments.forEach((a) => {
-      if (y > 260) { doc.addPage(); y = 20; }
-      doc.setFont("helvetica", "bold");
-      doc.text(`${a.Test_Name} (${a.Date})`, 25, y);
-      y += 5;
-      doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(a.Results, 160);
-      doc.text(lines, 30, y);
-      y += (lines.length * 5) + 4;
-    });
-    y += 6;
-  }
-
-  // Medical Conditions
-  if (student.Medical_Conditions) {
-    if (y > 240) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("MEDICAL CONDITIONS", 20, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const lines = doc.splitTextToSize(student.Medical_Conditions, 170);
-    doc.text(lines, 20, y);
-    y += (lines.length * 5) + 10;
-  }
-
-  // Master Accommodation List (Cumulative)
-  const uniqueAccommodations = Array.from(new Set(logs.filter((l: any) => l.Recommended_Assistive_Tech).map((l: any) => `${l.Recommended_Assistive_Tech} (${l.UDL_Purpose})`)));
   
-  if (uniqueAccommodations.length > 0) {
-    if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  
+  const drawRow = (label1: string, val1: string, label2: string, val2: string, currentY: number) => {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("RECOMMENDED ACCOMMODATIONS & UDL SUPPORTS", 20, y);
-    y += 8;
+    doc.text(label1, margin, currentY);
     doc.setFont("helvetica", "normal");
+    doc.text(val1, margin + doc.getTextWidth(label1) + 2, currentY);
+    
+    doc.setFont("helvetica", "bold");
+    doc.text(label2, pageWidth / 2, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(val2, pageWidth / 2 + doc.getTextWidth(label2) + 2, currentY);
+  };
+
+  drawRow("Child:", `${student.First_Name || ""} ${student.Last_Initial || ""}.`, "Age as of Sept. 1/0X:", student.Age_Sept_1 || "", y);
+  y += 6;
+  drawRow("Date of Birth:", student.Date_of_Birth || "", "Date I.P.P. Created:", student.Date_IPP_Created || "", y);
+  y += 6;
+  drawRow("Parents:", student.Parents_Names || "", "Phone #:", student.Phone_Number || "", y);
+  y += 6;
+  drawRow("Address:", student.Address || "", "Eligibility Code:", student.Eligibility_Code || "", y);
+  y += 6;
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("Year of E.C.S.:", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(student.Grade_Level || "", margin + doc.getTextWidth("Year of E.C.S.:") + 2, y);
+  y += 12;
+
+  // Section: Background information: Programming context
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Background information: Programming context", margin, y);
+  y += 6;
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  
+  const drawSingleRow = (label: string, val: string, currentY: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(label, margin, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(val, margin + doc.getTextWidth(label) + 2, currentY);
+  };
+
+  drawSingleRow("School/Program:", `${student.School_Name || ""} / ${student.School_Program || ""}`, y);
+  y += 6;
+  drawSingleRow("Teacher delivering programming:", student.Teacher_Name || "", y);
+  y += 6;
+  drawSingleRow("I.P.P. Coordinator (Certificated Teacher):", student.IPP_Coordinator || "", y);
+  y += 6;
+  drawSingleRow("Program Administrator:", student.Program_Administrator || "", y);
+  y += 6;
+  drawSingleRow("Additional IPP Team Members:", student.Additional_Team_Members || "", y);
+  y += 12;
+
+  drawSingleRow("Number of hours of centre-based programming:", student.Centre_Based_Hours || "", y);
+  y += 6;
+  drawSingleRow("Number of sessions of family-oriented ECS programming:", student.Family_Oriented_Sessions || "", y);
+  y += 12;
+
+  // Section: Background Information: Parental input and involvement
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Background Information: Parental input and involvement", margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const parentalInputLines = doc.splitTextToSize(student.Parental_Input || "None provided.", pageWidth - margin * 2);
+  doc.text(parentalInputLines, margin, y);
+  y += parentalInputLines.length * 5 + 10;
+
+  // --- PAGE 2: Strengths, Needs, Medical, Assessments ---
+  doc.addPage();
+  y = 25;
+
+  const addSection = (title: string, content: string) => {
+    if (y > pageHeight - 30) {
+      doc.addPage();
+      y = 25;
+    }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, margin, y);
+    y += 6;
     doc.setFontSize(10);
-    uniqueAccommodations.forEach((acc) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(`• ${acc}`, 25, y);
-      y += 6;
-    });
-    y += 10;
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(content || "None provided.", pageWidth - margin * 2);
+    doc.text(lines, margin, y);
+    y += lines.length * 5 + 10;
+  };
+
+  addSection("Strengths", student.Strengths_Summary);
+  addSection("Areas of Need", student.Areas_of_Need_Summary);
+  addSection("Medical Conditions that Impact Schooling", student.Medical_Conditions);
+
+  if (y > pageHeight - 50) {
+    doc.addPage();
+    y = 25;
+  }
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Assessment Data (Specialized Assessment Results)", margin, y);
+  y += 6;
+
+  const assessmentData = assessments.map(a => [a.Date, a.Test_Name, a.Results]);
+  if (assessmentData.length === 0) {
+    assessmentData.push(["", "", "No specialized assessments recorded."]);
   }
 
-  // Goals Section
-  if (y > 240) { doc.addPage(); y = 20; }
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("MEASURABLE GOALS (SMART)", 20, y);
-  y += 8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  autoTable(doc, {
+    startY: y,
+    head: [['Date', 'Test', 'Results']],
+    body: assessmentData,
+    theme: 'grid',
+    headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: 'bold' },
+    styles: { fontSize: 10, cellPadding: 3 },
+    margin: { left: margin, right: margin }
+  });
+  y = (doc as any).lastAutoTable.finalY + 10;
+
+  // --- PAGE 3: Performance, Support, Accommodations ---
+  doc.addPage();
+  y = 25;
+
+  let performanceText = student.Current_Performance_Narrative || fullEvaluations.map(ev => `${ev.Subject} (${ev.Grade}) - ${ev.Outcome_Code}: ${ev.Description} - [${ev.Status}]`).join("\n");
+  if (!performanceText) performanceText = "No curriculum evaluations recorded.";
+  addSection("Current Level of Performance and Achievement", performanceText);
+
+  let supportText = student.Support_Services_Summary || "No coordinated support services recorded.";
+  addSection("Coordinated Support Services", supportText);
+
+  const uniqueAccommodations = Array.from(new Set(logs.filter((l: any) => l.Recommended_Assistive_Tech).map((l: any) => `${l.Recommended_Assistive_Tech} (${l.UDL_Purpose})`)));
+  let accommodationsText = uniqueAccommodations.length > 0 ? uniqueAccommodations.map(a => `• ${a}`).join("\n") : "No instructional accommodations recorded.";
+  addSection("Instructional Accommodations and Strategies", accommodationsText);
+
+  // --- PAGE 4: Goals ---
+  doc.addPage();
+  y = 25;
+
   if (goals.length === 0) {
-    doc.text("No measurable goals defined yet.", 20, y);
-    y += 8;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Goal #1", margin, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Long-term Goal: No goals defined.", margin, y);
+    y += 10;
   } else {
     goals.forEach((goal: any, index: number) => {
-      if (y > 260) { doc.addPage(); y = 20; }
-      const goalText = `${index + 1}. [${goal.Core_Subject_Area || "General"}] ${goal.Goal_Description} (Target: ${goal.Target_Date}) - [${goal.Status}]`;
-      const lines = doc.splitTextToSize(goalText, 170);
-      doc.text(lines, 20, y);
-      y += (lines.length * 6) + 2;
+      if (y > pageHeight - 60) {
+        doc.addPage();
+        y = 25;
+      }
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Goal #${index + 1}`, margin, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      
+      const goalLines = doc.splitTextToSize(`Long-term Goal: ${goal.Goal_Description}`, pageWidth - margin * 2);
+      doc.text(goalLines, margin, y);
+      y += goalLines.length * 5 + 4;
+
+      const goalData = [
+        ["1. " + (goal.Objective_1_Description || ""), goal.Objective_1_Assessment_Procedure || "", goal.Objective_1_Progress_Review || ""],
+        ["2. " + (goal.Objective_2_Description || ""), goal.Objective_2_Assessment_Procedure || "", goal.Objective_2_Progress_Review || ""],
+        ["3. " + (goal.Objective_3_Description || ""), goal.Objective_3_Assessment_Procedure || "", goal.Objective_3_Progress_Review || ""]
+      ];
+
+      autoTable(doc, {
+        startY: y,
+        head: [['Short-term Objectives', 'Assessment Procedures', 'Progress Review']],
+        body: goalData,
+        theme: 'grid',
+        headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: 'bold' },
+        styles: { fontSize: 10, cellPadding: 3 },
+        margin: { left: margin, right: margin }
+      });
+      y = (doc as any).lastAutoTable.finalY + 5;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Accommodations and strategies to support this goal", margin, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      const accLines = doc.splitTextToSize(goal.Goal_Accommodations_Strategies || (goal.Core_Subject_Area ? `Subject Area: ${goal.Core_Subject_Area}` : "None specified."), pageWidth - margin * 2);
+      doc.text(accLines, margin, y);
+      y += accLines.length * 5 + 10;
     });
   }
-  y += 10;
 
-  // Transition Plan
-  if (student.Transition_Plan_Details) {
-    if (y > 240) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("TRANSITION PLANNING", 20, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const lines = doc.splitTextToSize(student.Transition_Plan_Details, 170);
-    doc.text(lines, 20, y);
-    y += (lines.length * 5) + 10;
+  // --- PAGE 5: Transition, Summary, Signatures ---
+  doc.addPage();
+  y = 25;
+
+  addSection("Planning for Transition", student.Transition_Plan_Details);
+  addSection("Year-end Summary", student.Year_End_Summary);
+
+  if (y > pageHeight - 80) {
+    doc.addPage();
+    y = 25;
   }
 
-  // Curriculum Alignment
-  if (fullEvaluations.length > 0) {
-    if (y > 240) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("ALBERTA CURRICULUM ALIGNMENT SUMMARY", 20, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    
-    fullEvaluations.forEach((ev) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const text = `${ev.Subject} (${ev.Grade}) - ${ev.Outcome_Code}: ${ev.Description} - [${ev.Status}]`;
-      const lines = doc.splitTextToSize(text, 170);
-      doc.text(lines, 20, y);
-      y += (lines.length * 5) + 2;
-    });
-    y += 10;
-  }
-
-  // Strengths & Observations
-  if (y > 240) { doc.addPage(); y = 20; }
-  doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("STRENGTHS-BASED OBSERVATIONS & EVIDENCE", 20, y);
-  y += 8;
-  doc.setFontSize(10);
-  logs.forEach((log: any, index: number) => {
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold");
-    doc.text(`Observation ${index + 1} - ${new Date(log.Timestamp).toLocaleDateString()}`, 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    const textLines = doc.splitTextToSize(log.AI_Scrubbed_Observation || log.Raw_Dictation, 170);
-    doc.text(textLines, 20, y);
-    y += (textLines.length * 6) + 4;
-  });
-
-  // Signatures
-  if (y > 220) { doc.addPage(); y = 20; }
-  y += 10;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("SIGNATURES & APPROVAL", 20, y);
-  y += 15;
-  doc.line(20, y, 80, y);
-  doc.line(110, y, 170, y);
-  y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.text("Lead Teacher / Case Manager", 20, y);
-  doc.text("Parent / Guardian", 110, y);
+  doc.text("Signatures", margin, y);
+  y += 8;
   
-  y += 15;
-  doc.line(20, y, 80, y);
-  doc.line(110, y, 170, y);
-  y += 5;
-  doc.text("School Administrator", 20, y);
-  doc.text("Date", 110, y);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("I understand and agree with the information contained in this Individualized Program Plan.", margin, y);
+  y += 20;
 
-  doc.save(`IPP_Detailed_${student.First_Name}_${student.Last_Initial}.pdf`);
+  const drawSignatureLine = (title: string, currentY: number) => {
+    doc.line(margin, currentY, margin + 80, currentY);
+    doc.line(pageWidth - margin - 40, currentY, pageWidth - margin, currentY);
+    doc.text(title, margin, currentY + 5);
+    doc.text("Date", pageWidth - margin - 40, currentY + 5);
+  };
+
+  drawSignatureLine("Parents", y);
+  y += 20;
+  drawSignatureLine("IPP Coordinator (Certificated Teacher)", y);
+  y += 20;
+  drawSignatureLine("Teacher (if different from IPP Coordinator)", y);
+  y += 20;
+  drawSignatureLine("Program Administrator", y);
+
+  // --- Date Generation ---
+  const date = new Date();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const yyyy = date.getFullYear();
+  const mmm = monthNames[date.getMonth()];
+  const dd = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${yyyy}_${mmm}_${dd}`;
+  const headerDateStr = `${yyyy}-${mmm}-${dd}`;
+
+  // --- Add Footers to all pages ---
+  const totalPagesCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= totalPagesCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("©Pathway Pilot 2026", margin, pageHeight - 10);
+    if (i > 1) {
+      doc.text(`Pathway Pilot - IPP - Student ${student.First_Name || ""} -${student.Last_Initial || ""}-${headerDateStr} page ${i}/${totalPagesCount}`, margin, 15);
+    }
+  }
+
+  // --- Filename Generation ---
+  
+  const safeStr = (str: string) => (str || "Unknown").replace(/[\s/\\:*?"<>|]+/g, '_');
+  
+  const filename = `IPP_${safeStr(student.First_Name)}_${safeStr(student.Last_Initial)}_${safeStr(student.Student_ID)}_${safeStr(student.Grade_Level)}_${dateStr}-${safeStr(student.School_Name)}_${safeStr(student.Teacher_Name)}.pdf`;
+
+  doc.save(filename);
   toast.success("Success", { description: "Detailed IPP Report generated successfully." });
 };

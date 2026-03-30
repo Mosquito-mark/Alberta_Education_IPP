@@ -19,8 +19,23 @@ import { Student, Observation, Goal, CurriculumOutcome, Evaluation, VerticalAlig
 export default function StudentProfile() {
   const { id } = useParams();
   const [data, setData] = useState<{ student: Student; logs: Observation[]; goals: Goal[] } | null>(null);
-  const [newGoal, setNewGoal] = useState({ description: "", targetDate: "", subjectArea: "General" });
+  const [newGoal, setNewGoal] = useState({ 
+    description: "", 
+    targetDate: "", 
+    subjectArea: "General",
+    obj1Desc: "",
+    obj1Assess: "",
+    obj1Prog: "",
+    obj2Desc: "",
+    obj2Assess: "",
+    obj2Prog: "",
+    obj3Desc: "",
+    obj3Assess: "",
+    obj3Prog: "",
+    accommodations: ""
+  });
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isSuggestingObjectives, setIsSuggestingObjectives] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   
   const [selectedSubject, setSelectedSubject] = useState("");
@@ -159,12 +174,36 @@ export default function StudentProfile() {
         body: JSON.stringify({ 
           Goal_Description: newGoal.description, 
           Target_Date: newGoal.targetDate,
-          Core_Subject_Area: newGoal.subjectArea
+          Core_Subject_Area: newGoal.subjectArea,
+          Objective_1_Description: newGoal.obj1Desc,
+          Objective_1_Assessment_Procedure: newGoal.obj1Assess,
+          Objective_1_Progress_Review: newGoal.obj1Prog,
+          Objective_2_Description: newGoal.obj2Desc,
+          Objective_2_Assessment_Procedure: newGoal.obj2Assess,
+          Objective_2_Progress_Review: newGoal.obj2Prog,
+          Objective_3_Description: newGoal.obj3Desc,
+          Objective_3_Assessment_Procedure: newGoal.obj3Assess,
+          Objective_3_Progress_Review: newGoal.obj3Prog,
+          Goal_Accommodations_Strategies: newGoal.accommodations
         })
       });
       if (res.ok) {
         toast.success("Goal added successfully");
-        setNewGoal({ description: "", targetDate: "", subjectArea: "General" });
+        setNewGoal({ 
+          description: "", 
+          targetDate: "", 
+          subjectArea: "General",
+          obj1Desc: "",
+          obj1Assess: "",
+          obj1Prog: "",
+          obj2Desc: "",
+          obj2Assess: "",
+          obj2Prog: "",
+          obj3Desc: "",
+          obj3Assess: "",
+          obj3Prog: "",
+          accommodations: ""
+        });
         fetchData();
       } else {
         toast.error("Failed to add goal");
@@ -230,6 +269,86 @@ Return ONLY the goal description text, nothing else.`;
     }
   };
 
+  const handleSuggestObjectives = async () => {
+    if (!data || !data.logs || data.logs.length === 0) {
+      toast.error("Not enough data", { description: "Need at least one observation to suggest objectives." });
+      return;
+    }
+
+    if (!newGoal.description || !newGoal.subjectArea || !newGoal.targetDate) {
+      toast.error("Missing information", { description: "Please fill in the Goal Description, Subject Area, and Target Date first." });
+      return;
+    }
+
+    setIsSuggestingObjectives(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const { student, logs } = data;
+      
+      const subjectLogs = logs.filter((l: any) => l.Core_Subject_Area === newGoal.subjectArea);
+      const relevantLogs = subjectLogs.length > 0 ? subjectLogs : logs;
+
+      const prompt = `Based on the following student observations, generate 3 short-term objectives to help the student achieve their main goal.
+
+Student: ${student.First_Name} ${student.Last_Initial}.
+Grade: ${student.Grade_Level}
+Main Goal: ${newGoal.description}
+Subject Area: ${newGoal.subjectArea}
+Target Date: ${newGoal.targetDate}
+
+Observations:
+${relevantLogs.map((l: any) => `- ${l.AI_Scrubbed_Observation || l.Raw_Dictation}`).join('\n')}
+
+For each of the 3 objectives, provide:
+1. An achievable grade-level appropriate objective description.
+2. What type of best practice educational assessment procedure will be used.
+3. A suggested progress review date (YYYY-MM-DD) that is BEFORE the target date (${newGoal.targetDate}).
+
+Return the output strictly as a JSON object with this exact structure:
+{
+  "obj1Desc": "description here",
+  "obj1Assess": "assessment procedure here",
+  "obj1Prog": "YYYY-MM-DD",
+  "obj2Desc": "description here",
+  "obj2Assess": "assessment procedure here",
+  "obj2Prog": "YYYY-MM-DD",
+  "obj3Desc": "description here",
+  "obj3Assess": "assessment procedure here",
+  "obj3Prog": "YYYY-MM-DD"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+      
+      if (response.text) {
+        const objectives = JSON.parse(response.text.trim());
+        setNewGoal(prev => ({ 
+          ...prev, 
+          obj1Desc: objectives.obj1Desc || prev.obj1Desc,
+          obj1Assess: objectives.obj1Assess || prev.obj1Assess,
+          obj1Prog: objectives.obj1Prog || prev.obj1Prog,
+          obj2Desc: objectives.obj2Desc || prev.obj2Desc,
+          obj2Assess: objectives.obj2Assess || prev.obj2Assess,
+          obj2Prog: objectives.obj2Prog || prev.obj2Prog,
+          obj3Desc: objectives.obj3Desc || prev.obj3Desc,
+          obj3Assess: objectives.obj3Assess || prev.obj3Assess,
+          obj3Prog: objectives.obj3Prog || prev.obj3Prog,
+        }));
+        toast.success("AI Objectives Suggested");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate objectives");
+    } finally {
+      setIsSuggestingObjectives(false);
+    }
+  };
+
   if (!data) return <div className="p-8 text-center text-muted-foreground">Loading profile...</div>;
 
   const { student, logs, goals = [] } = data;
@@ -239,65 +358,71 @@ Return ONLY the goal description text, nothing else.`;
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="bg-white p-8 rounded-xl border shadow-sm flex items-center gap-6">
-        <Button variant="ghost" size="icon" render={<Link to="/" />} className="h-12 w-12 rounded-full border border-neutral-200 hover:bg-primary/5 text-primary">
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-1">
-            <span className="bg-primary text-white px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">Student Profile</span>
-            <span className="text-muted-foreground text-sm font-medium">ID: {student.Student_ID}</span>
+    <div className="dark bg-background min-h-screen -m-8 p-8 text-foreground">
+      <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="bg-card p-4 sm:p-8 rounded-none border-l-8 border-l-goa-sky border shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          <Link to="/" aria-label="Back to Student Roster Dashboard">
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-none border border-border hover:bg-muted text-primary">
+              <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+            </Button>
+          </Link>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-widest">Student Profile</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">ID: {student.Student_ID}</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{student.First_Name} {student.Last_Initial}.</h1>
+            <p className="text-muted-foreground text-base font-bold uppercase tracking-widest text-[10px] mt-1">Grade {student.Grade_Level} • {student.School_Program || "Pathway Pilot Success Program"}</p>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-primary uppercase">{student.First_Name} {student.Last_Initial}.</h1>
-          <p className="text-muted-foreground text-lg font-medium">Grade {student.Grade_Level} • {student.School_Program || "Edmonton Public Schools"}</p>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Button onClick={handleGeneratePDF} size="lg" className="bg-secondary text-primary font-black hover:bg-secondary/90 shadow-sm px-8">
-            <Download className="w-5 h-5 mr-2" /> Export IPP PDF
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-6">
-          <ProfileDetails student={student} logs={logs} goals={goals} />
-          <IPPContextManager student={student} onUpdate={fetchData} />
+          <div className="flex flex-col gap-2">
+            <Button onClick={handleGeneratePDF} size="lg" className="bg-primary text-primary-foreground font-bold hover:bg-primary/90 shadow-sm px-8 rounded-none uppercase tracking-widest text-xs" aria-label="Download Individual Program Plan as PDF">
+              <Download className="w-5 h-5 mr-2" aria-hidden="true" /> Export IPP PDF
+            </Button>
+          </div>
         </div>
 
-        <div className="md:col-span-2 space-y-6">
-          <GoalManager 
-            goals={goals}
-            newGoal={newGoal}
-            setNewGoal={setNewGoal}
-            handleAddGoal={handleAddGoal}
-            handleSuggestGoal={handleSuggestGoal}
-            handleUpdateGoalStatus={handleUpdateGoalStatus}
-            isSuggesting={isSuggesting}
-            metadata={metadata}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            <ProfileDetails student={student} logs={logs} goals={goals} />
+            <IPPContextManager student={student} onUpdate={fetchData} />
+          </div>
 
-          <CurriculumAssessment 
-            selectedSubject={selectedSubject}
-            setSelectedSubject={setSelectedSubject}
-            selectedGrade={selectedGrade}
-            setSelectedGrade={setSelectedGrade}
-            curriculumOutcomes={curriculumOutcomes}
-            evaluations={evaluations}
-            handleUpdateEvaluation={handleUpdateEvaluation}
-            isLoadingCurriculum={isLoadingCurriculum}
-          />
+          <div className="md:col-span-2 space-y-6">
+            <GoalManager 
+              goals={goals}
+              newGoal={newGoal}
+              setNewGoal={setNewGoal}
+              handleAddGoal={handleAddGoal}
+              handleSuggestGoal={handleSuggestGoal}
+              handleSuggestObjectives={handleSuggestObjectives}
+              handleUpdateGoalStatus={handleUpdateGoalStatus}
+              isSuggesting={isSuggesting}
+              isSuggestingObjectives={isSuggestingObjectives}
+              metadata={metadata}
+            />
 
-          <VerticalAlignmentAssessment 
-            verticalAlignmentOutcomes={verticalAlignmentOutcomes}
-            verticalEvaluations={verticalEvaluations}
-            handleUpdateVerticalEvaluation={handleUpdateVerticalEvaluation}
-            isLoadingVertical={isLoadingVertical}
-          />
+            <CurriculumAssessment 
+              selectedSubject={selectedSubject}
+              setSelectedSubject={setSelectedSubject}
+              selectedGrade={selectedGrade}
+              setSelectedGrade={setSelectedGrade}
+              curriculumOutcomes={curriculumOutcomes}
+              evaluations={evaluations}
+              handleUpdateEvaluation={handleUpdateEvaluation}
+              isLoadingCurriculum={isLoadingCurriculum}
+            />
 
-          <CurriculumSummary fullEvaluations={fullEvaluations} />
+            <VerticalAlignmentAssessment 
+              verticalAlignmentOutcomes={verticalAlignmentOutcomes}
+              verticalEvaluations={verticalEvaluations}
+              handleUpdateVerticalEvaluation={handleUpdateVerticalEvaluation}
+              isLoadingVertical={isLoadingVertical}
+            />
 
-          <ObservationHistory logs={logs} />
+            <CurriculumSummary fullEvaluations={fullEvaluations} />
+
+            <ObservationHistory logs={logs} />
+          </div>
         </div>
       </div>
     </div>

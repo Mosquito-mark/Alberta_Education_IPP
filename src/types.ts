@@ -24,6 +24,11 @@ export interface Student {
   Areas_of_Need_Summary?: string;
   Transition_Plan_Details?: string;
   Year_End_Summary?: string;
+  School_Name?: string;
+  School_Board?: string;
+  Principal_Name?: string;
+  Support_Services_Summary?: string;
+  Current_Performance_Narrative?: string;
 }
 
 export interface SpecializedAssessment {
@@ -57,6 +62,16 @@ export interface Goal {
   Status: string;
   Core_Subject_Area: string;
   Timestamp: string;
+  Objective_1_Description?: string;
+  Objective_1_Assessment_Procedure?: string;
+  Objective_1_Progress_Review?: string;
+  Objective_2_Description?: string;
+  Objective_2_Assessment_Procedure?: string;
+  Objective_2_Progress_Review?: string;
+  Objective_3_Description?: string;
+  Objective_3_Assessment_Procedure?: string;
+  Objective_3_Progress_Review?: string;
+  Goal_Accommodations_Strategies?: string;
 }
 
 export interface CurriculumOutcome {

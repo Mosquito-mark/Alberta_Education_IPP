@@ -1,14 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "@fontsource-variable/geist";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'Inter', sans-serif;
-    --font-sans: 'Inter', sans-serif;
+    --font-heading: "Helvetica Neue", Arial, sans-serif;
+    --font-sans: "Helvetica Neue", Arial, sans-serif;
+    
+    /* GoA Palette - Optimized for Contrast */
+    --color-goa-stone: #aca4a3;
+    --color-goa-sky: #0070c0; /* Official Sky Blue - 4.5:1 on white */
+    --color-goa-sky-text: #005a9c; /* Darker Sky Blue for small text - 6.5:1 on white */
+    --color-goa-dawn: #ef4b8b;
+    --color-goa-sunset: #ed8c00;
+    --color-goa-prairie: #ffc836;
+    --color-goa-pasture: #78bf26;
+    --color-goa-stone-dark: #333333; /* Standard Stone Dark - 12.6:1 on white */
+    --color-goa-sky-dark: #002c4e;
+    --color-goa-stone-mid: #4d4d4d; /* Darker Stone Mid - 9.2:1 on white (AAA) */
+    --color-goa-stone-light: #d0d1db;
+
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,38 +64,33 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.35 0.12 260); /* EPSB Blue */
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.85 0.18 85); /* EPSB Gold */
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.35 0.12 260);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.85 0.18 85 / 0.1);
-    --sidebar-accent-foreground: oklch(0.35 0.12 260);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --background: #ffffff;
+    --foreground: #333333; /* Stone Dark for primary text */
+    --card: #ffffff;
+    --card-foreground: #333333;
+    --popover: #ffffff;
+    --popover-foreground: #333333;
+    --primary: #0070c0; /* GoA Sky */
+    --primary-foreground: #ffffff;
+    --secondary: #ffc836; /* GoA Prairie */
+    --secondary-foreground: #333333;
+    --muted: #f3f4f6;
+    --muted-foreground: #4d4d4d; /* GoA Stone Mid (AAA) */
+    --accent: #ed8c00; /* GoA Sunset */
+    --accent-foreground: #ffffff;
+    --destructive: #9e2b33; /* GoA Sunset Dark */
+    --border: #d0d1db; /* GoA Stone Light */
+    --input: #d0d1db;
+    --ring: #00b6ed;
+    --radius: 0px; /* GoA style is very square/formal */
+    --sidebar: #ffffff;
+    --sidebar-foreground: #000000;
+    --sidebar-primary: #00b6ed;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f3f4f6;
+    --sidebar-accent-foreground: #00b6ed;
+    --sidebar-border: #d0d1db;
+    --sidebar-ring: #00b6ed;
 }
 
 .dark {

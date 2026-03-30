@@ -1,5 +1,5 @@
 {
-  "name": "Student Observation Hub",
-  "description": "An application for tracking student observations, generating SMART goals, and creating Individualized Program Plans (IPPs).",
+  "name": "Pathway Pilot",
+  "description": "A streamlined platform for tracking student observations, generating SMART goals, and managing Individualized Program Plans (IPPs).",
   "requestFramePermissions": ["microphone"]
 }

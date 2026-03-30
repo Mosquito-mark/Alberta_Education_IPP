@@ -66,7 +66,12 @@ async function startServer() {
       Strengths_Summary TEXT,
       Areas_of_Need_Summary TEXT,
       Transition_Plan_Details TEXT,
-      Year_End_Summary TEXT
+      Year_End_Summary TEXT,
+      School_Name TEXT,
+      School_Board TEXT,
+      Principal_Name TEXT,
+      Support_Services_Summary TEXT,
+      Current_Performance_Narrative TEXT
     );
 
     CREATE TABLE IF NOT EXISTS Specialized_Assessments (
@@ -100,10 +105,20 @@ async function startServer() {
       Status TEXT DEFAULT 'In Progress',
       Core_Subject_Area TEXT,
       Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      Objective_1_Description TEXT,
+      Objective_1_Assessment_Procedure TEXT,
+      Objective_1_Progress_Review TEXT,
+      Objective_2_Description TEXT,
+      Objective_2_Assessment_Procedure TEXT,
+      Objective_2_Progress_Review TEXT,
+      Objective_3_Description TEXT,
+      Objective_3_Assessment_Procedure TEXT,
+      Objective_3_Progress_Review TEXT,
+      Goal_Accommodations_Strategies TEXT,
       FOREIGN KEY(Student_ID) REFERENCES Student_Profiles(Student_ID)
     );
 
-    CREATE TABLE IF NOT EXISTS Alberta_Curriculum_Outcomes (
+    CREATE TABLE IF NOT EXISTS Curriculum_Outcomes (
       Outcome_ID INTEGER PRIMARY KEY AUTOINCREMENT,
       Subject TEXT,
       Grade TEXT,
@@ -118,7 +133,7 @@ async function startServer() {
       Status TEXT, -- 'Not Met', 'Met', 'Exceeded'
       Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(Student_ID) REFERENCES Student_Profiles(Student_ID),
-      FOREIGN KEY(Outcome_ID) REFERENCES Alberta_Curriculum_Outcomes(Outcome_ID)
+      FOREIGN KEY(Outcome_ID) REFERENCES Curriculum_Outcomes(Outcome_ID)
     );
 
     CREATE TABLE IF NOT EXISTS Student_Vertical_Alignment_Evaluations (
@@ -132,10 +147,27 @@ async function startServer() {
     );
   `);
 
+  try { db.exec("ALTER TABLE Student_Profiles ADD COLUMN School_Name TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Student_Profiles ADD COLUMN School_Board TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Student_Profiles ADD COLUMN Principal_Name TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Student_Profiles ADD COLUMN Support_Services_Summary TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Student_Profiles ADD COLUMN Current_Performance_Narrative TEXT;"); } catch (e) {}
+
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_1_Description TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_1_Assessment_Procedure TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_1_Progress_Review TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_2_Description TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_2_Assessment_Procedure TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_2_Progress_Review TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_3_Description TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_3_Assessment_Procedure TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Objective_3_Progress_Review TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE Measurable_Goals ADD COLUMN Goal_Accommodations_Strategies TEXT;"); } catch (e) {}
+
   // Seed data if empty
-  const countCurriculum = db.prepare("SELECT COUNT(*) as count FROM Alberta_Curriculum_Outcomes").get() as { count: number };
+  const countCurriculum = db.prepare("SELECT COUNT(*) as count FROM Curriculum_Outcomes").get() as { count: number };
   if (countCurriculum.count === 0) {
-    const insertCurriculum = db.prepare("INSERT INTO Alberta_Curriculum_Outcomes (Subject, Grade, Outcome_Code, Description) VALUES (?, ?, ?, ?)");
+    const insertCurriculum = db.prepare("INSERT INTO Curriculum_Outcomes (Subject, Grade, Outcome_Code, Description) VALUES (?, ?, ?, ?)");
     
     // Mathematics Grade 6
     insertCurriculum.run("Mathematics", "Gr.6", "6.N.1", "Demonstrate an understanding of place value for numbers greater than one million.");
@@ -205,7 +237,10 @@ async function startServer() {
 
   // API Routes
   app.get("/api/students", (req, res) => {
-    const students = db.prepare("SELECT * FROM Student_Profiles").all();
+    const students = db.prepare(`
+      SELECT s.*, (SELECT MAX(Timestamp) FROM Observation_Logs WHERE Student_ID = s.Student_ID) as Last_Observation_Date
+      FROM Student_Profiles s
+    `).all();
     res.json(students);
   });
 
@@ -312,9 +347,29 @@ async function startServer() {
 
   app.post("/api/students/:id/goals", (req, res) => {
     const { id } = req.params;
-    const { Goal_Description, Target_Date, Core_Subject_Area } = req.body;
+    const { 
+      Goal_Description, Target_Date, Core_Subject_Area,
+      Objective_1_Description, Objective_1_Assessment_Procedure, Objective_1_Progress_Review,
+      Objective_2_Description, Objective_2_Assessment_Procedure, Objective_2_Progress_Review,
+      Objective_3_Description, Objective_3_Assessment_Procedure, Objective_3_Progress_Review,
+      Goal_Accommodations_Strategies
+    } = req.body;
     try {
-      db.prepare("INSERT INTO Measurable_Goals (Student_ID, Goal_Description, Target_Date, Status, Core_Subject_Area) VALUES (?, ?, ?, 'Not Started', ?)").run(id, Goal_Description, Target_Date, Core_Subject_Area || "General");
+      db.prepare(`
+        INSERT INTO Measurable_Goals (
+          Student_ID, Goal_Description, Target_Date, Status, Core_Subject_Area,
+          Objective_1_Description, Objective_1_Assessment_Procedure, Objective_1_Progress_Review,
+          Objective_2_Description, Objective_2_Assessment_Procedure, Objective_2_Progress_Review,
+          Objective_3_Description, Objective_3_Assessment_Procedure, Objective_3_Progress_Review,
+          Goal_Accommodations_Strategies
+        ) VALUES (?, ?, ?, 'Not Started', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id, Goal_Description, Target_Date, Core_Subject_Area || "General",
+        Objective_1_Description || "", Objective_1_Assessment_Procedure || "", Objective_1_Progress_Review || "",
+        Objective_2_Description || "", Objective_2_Assessment_Procedure || "", Objective_2_Progress_Review || "",
+        Objective_3_Description || "", Objective_3_Assessment_Procedure || "", Objective_3_Progress_Review || "",
+        Goal_Accommodations_Strategies || ""
+      );
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -334,7 +389,7 @@ async function startServer() {
 
   app.get("/api/curriculum", (req, res) => {
     const { subject, grade } = req.query;
-    let query = "SELECT * FROM Alberta_Curriculum_Outcomes";
+    let query = "SELECT * FROM Curriculum_Outcomes";
     const params: any[] = [];
     
     if (subject || grade) {
@@ -381,7 +436,7 @@ async function startServer() {
     const evaluations = db.prepare(`
       SELECT e.*, a.Subject, a.Grade, a.Outcome_Code, a.Description
       FROM Student_Outcome_Evaluations e
-      JOIN Alberta_Curriculum_Outcomes a ON e.Outcome_ID = a.Outcome_ID
+      JOIN Curriculum_Outcomes a ON e.Outcome_ID = a.Outcome_ID
       WHERE e.Student_ID = ?
       ORDER BY a.Subject, a.Grade, a.Outcome_Code
     `).all(id);
@@ -442,7 +497,7 @@ async function startServer() {
         const evaluations = db.prepare(`
           SELECT a.Outcome_Code, a.Description, e.Status
           FROM Student_Outcome_Evaluations e
-          JOIN Alberta_Curriculum_Outcomes a ON e.Outcome_ID = a.Outcome_ID
+          JOIN Curriculum_Outcomes a ON e.Outcome_ID = a.Outcome_ID
           WHERE e.Student_ID = ?
         `).all(student.Student_ID);
         const verticalEvaluations = db.prepare(`
