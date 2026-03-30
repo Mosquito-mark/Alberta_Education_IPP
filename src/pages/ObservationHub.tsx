@@ -145,15 +145,17 @@ export default function ObservationHub() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.Student_ID || !scrubbedText) {
-      toast.error("Missing fields", { description: "Please select a student and scrub the observation first." });
+    if (!formData.Student_ID || (!scrubbedText && !rawDictation)) {
+      toast.error("Missing fields", { description: "Please select a student and enter an observation." });
       return;
     }
+
+    const finalObservation = scrubbedText || rawDictation;
 
     const data = new FormData();
     data.append("Student_ID", formData.Student_ID);
     data.append("Raw_Dictation", rawDictation);
-    data.append("AI_Scrubbed_Observation", scrubbedText);
+    data.append("AI_Scrubbed_Observation", finalObservation);
     
     // Find Outcome_ID and Accommodation_ID based on selections
     const outcome = metadata.outcomes?.find((o: any) => o.Core_Subject_Area === formData.Core_Subject_Area);
@@ -235,11 +237,11 @@ export default function ObservationHub() {
             <Button 
               onClick={handleScrub} 
               disabled={isScrubbing || !rawDictation}
-              className="w-full bg-goa-sky hover:bg-goa-sky/90 text-white h-12 text-sm font-bold uppercase tracking-widest shadow-md rounded-none"
+              className="w-full bg-goa-sky hover:bg-goa-sky/90 text-white h-auto py-3 text-sm font-bold uppercase tracking-widest shadow-md rounded-none whitespace-normal flex items-center justify-center"
               aria-label="Process raw dictation using AI to create a strengths-based observation"
             >
-              {isScrubbing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-              Use Goal Strengths First Format
+              {isScrubbing ? <Loader2 className="w-4 h-4 mr-2 animate-spin shrink-0" /> : <CheckCircle className="w-4 h-4 mr-2 shrink-0" />}
+              <span>Use Goal Strengths First Format</span>
             </Button>
           </div>
         </div>
@@ -330,16 +332,19 @@ export default function ObservationHub() {
                 aria-label="Review and edit the AI-generated strengths-based observation"
               />
             </div>
-            <Button 
-              onClick={handleSubmit} 
-              className="w-full bg-goa-prairie text-goa-stone-dark font-bold h-14 text-lg uppercase tracking-widest hover:bg-goa-prairie/90 shadow-md rounded-none" 
-              size="lg"
-              aria-label="Save the finalized observation to the student's Individual Program Plan"
-            >
-              Save Observation to IPP
-            </Button>
           </div>
         )}
+
+        <div className="pt-6">
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full bg-goa-prairie text-goa-stone-dark font-bold h-auto py-4 text-lg uppercase tracking-widest hover:bg-goa-prairie/90 shadow-md rounded-none whitespace-normal" 
+            size="lg"
+            aria-label="Save the finalized observation to the student's Individual Program Plan"
+          >
+            Save Observation to IPP
+          </Button>
+        </div>
       </div>
     </div>
   );

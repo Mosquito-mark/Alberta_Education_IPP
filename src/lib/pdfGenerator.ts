@@ -28,29 +28,39 @@ export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEva
   const drawRow = (label1: string, val1: string, label2: string, val2: string, currentY: number) => {
     doc.setFont("helvetica", "bold");
     doc.text(label1, margin, currentY);
+    const label1Width = doc.getTextWidth(label1);
     doc.setFont("helvetica", "normal");
-    doc.text(val1, margin + doc.getTextWidth(label1) + 2, currentY);
+    const val1X = margin + label1Width + 2;
+    const val1MaxW = (pageWidth / 2) - val1X - 5;
+    const val1Lines = doc.splitTextToSize(val1 || "", val1MaxW);
+    doc.text(val1Lines, val1X, currentY);
     
     doc.setFont("helvetica", "bold");
     doc.text(label2, pageWidth / 2, currentY);
+    const label2Width = doc.getTextWidth(label2);
     doc.setFont("helvetica", "normal");
-    doc.text(val2, pageWidth / 2 + doc.getTextWidth(label2) + 2, currentY);
+    const val2X = pageWidth / 2 + label2Width + 2;
+    const val2MaxW = pageWidth - margin - val2X;
+    const val2Lines = doc.splitTextToSize(val2 || "", val2MaxW);
+    doc.text(val2Lines, val2X, currentY);
+
+    const maxLines = Math.max(val1Lines.length, val2Lines.length);
+    return currentY + (maxLines * 5) + 1;
   };
 
-  drawRow("Child:", `${student.First_Name || ""} ${student.Last_Initial || ""}.`, "Age as of Sept. 1/0X:", student.Age_Sept_1 || "", y);
-  y += 6;
-  drawRow("Date of Birth:", student.Date_of_Birth || "", "Date I.P.P. Created:", student.Date_IPP_Created || "", y);
-  y += 6;
-  drawRow("Parents:", student.Parents_Names || "", "Phone #:", student.Phone_Number || "", y);
-  y += 6;
-  drawRow("Address:", student.Address || "", "Eligibility Code:", student.Eligibility_Code || "", y);
-  y += 6;
+  y = drawRow("Child:", `${student.First_Name || ""} ${student.Last_Initial || ""}.`, "Age as of Sept. 1/0X:", student.Age_Sept_1 || "", y);
+  y = drawRow("Date of Birth:", student.Date_of_Birth || "", "Date I.P.P. Created:", student.Date_IPP_Created || "", y);
+  y = drawRow("Parents:", student.Parents_Names || "", "Phone #:", student.Phone_Number || "", y);
+  y = drawRow("Address:", student.Address || "", "Eligibility Code:", student.Eligibility_Code || "", y);
   
   doc.setFont("helvetica", "bold");
   doc.text("Year of E.C.S.:", margin, y);
+  const ecsLabelWidth = doc.getTextWidth("Year of E.C.S.:");
   doc.setFont("helvetica", "normal");
-  doc.text(student.Grade_Level || "", margin + doc.getTextWidth("Year of E.C.S.:") + 2, y);
-  y += 12;
+  const ecsX = margin + ecsLabelWidth + 2;
+  const ecsLines = doc.splitTextToSize(student.Grade_Level || "", pageWidth - margin - ecsX);
+  doc.text(ecsLines, ecsX, y);
+  y += (ecsLines.length * 5) + 7;
 
   // Section: Background information: Programming context
   doc.setFontSize(12);
@@ -64,40 +74,14 @@ export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEva
   const drawSingleRow = (label: string, val: string, currentY: number) => {
     doc.setFont("helvetica", "bold");
     doc.text(label, margin, currentY);
+    const labelWidth = doc.getTextWidth(label);
     doc.setFont("helvetica", "normal");
-    doc.text(val, margin + doc.getTextWidth(label) + 2, currentY);
+    const valX = margin + labelWidth + 2;
+    const valMaxW = pageWidth - margin - valX;
+    const valLines = doc.splitTextToSize(val || "", valMaxW);
+    doc.text(valLines, valX, currentY);
+    return currentY + (valLines.length * 5) + 1;
   };
-
-  drawSingleRow("School/Program:", `${student.School_Name || ""} / ${student.School_Program || ""}`, y);
-  y += 6;
-  drawSingleRow("Teacher delivering programming:", student.Teacher_Name || "", y);
-  y += 6;
-  drawSingleRow("I.P.P. Coordinator (Certificated Teacher):", student.IPP_Coordinator || "", y);
-  y += 6;
-  drawSingleRow("Program Administrator:", student.Program_Administrator || "", y);
-  y += 6;
-  drawSingleRow("Additional IPP Team Members:", student.Additional_Team_Members || "", y);
-  y += 12;
-
-  drawSingleRow("Number of hours of centre-based programming:", student.Centre_Based_Hours || "", y);
-  y += 6;
-  drawSingleRow("Number of sessions of family-oriented ECS programming:", student.Family_Oriented_Sessions || "", y);
-  y += 12;
-
-  // Section: Background Information: Parental input and involvement
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Background Information: Parental input and involvement", margin, y);
-  y += 6;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  const parentalInputLines = doc.splitTextToSize(student.Parental_Input || "None provided.", pageWidth - margin * 2);
-  doc.text(parentalInputLines, margin, y);
-  y += parentalInputLines.length * 5 + 10;
-
-  // --- PAGE 2: Strengths, Needs, Medical, Assessments ---
-  doc.addPage();
-  y = 25;
 
   const addSection = (title: string, content: string) => {
     if (y > pageHeight - 30) {
@@ -111,9 +95,34 @@ export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEva
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const lines = doc.splitTextToSize(content || "None provided.", pageWidth - margin * 2);
-    doc.text(lines, margin, y);
-    y += lines.length * 5 + 10;
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (y > pageHeight - 20) {
+        doc.addPage();
+        y = 25;
+      }
+      doc.text(lines[i], margin, y);
+      y += 5;
+    }
+    y += 8; // Add some padding after the section
   };
+
+  y = drawSingleRow("School/Program:", `${student.School_Name || ""} / ${student.School_Program || ""}`, y);
+  y = drawSingleRow("Teacher delivering programming:", student.Teacher_Name || "", y);
+  y = drawSingleRow("I.P.P. Coordinator (Certificated Teacher):", student.IPP_Coordinator || "", y);
+  y = drawSingleRow("Program Administrator:", student.Program_Administrator || "", y);
+  y = drawSingleRow("Additional IPP Team Members:", student.Additional_Team_Members || "", y);
+  y += 6;
+
+  y = drawSingleRow("Number of hours of centre-based programming:", student.Centre_Based_Hours || "", y);
+  y = drawSingleRow("Number of sessions of family-oriented ECS programming:", student.Family_Oriented_Sessions || "", y);
+  y += 6;
+
+  addSection("Background Information: Parental input and involvement", student.Parental_Input);
+
+  // --- PAGE 2: Strengths, Needs, Medical, Assessments ---
+  doc.addPage();
+  y = 25;
 
   addSection("Strengths", student.Strengths_Summary);
   addSection("Areas of Need", student.Areas_of_Need_Summary);
@@ -186,8 +195,15 @@ export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEva
       doc.setFont("helvetica", "normal");
       
       const goalLines = doc.splitTextToSize(`Long-term Goal: ${goal.Goal_Description}`, pageWidth - margin * 2);
-      doc.text(goalLines, margin, y);
-      y += goalLines.length * 5 + 4;
+      for (let i = 0; i < goalLines.length; i++) {
+        if (y > pageHeight - 20) {
+          doc.addPage();
+          y = 25;
+        }
+        doc.text(goalLines[i], margin, y);
+        y += 5;
+      }
+      y += 4;
 
       const goalData = [
         ["1. " + (goal.Objective_1_Description || ""), goal.Objective_1_Assessment_Procedure || "", goal.Objective_1_Progress_Review || ""],
@@ -206,13 +222,24 @@ export const generateIPP_PDF = (student: any, logs: any[], goals: any[], fullEva
       });
       y = (doc as any).lastAutoTable.finalY + 5;
 
+      if (y > pageHeight - 20) {
+        doc.addPage();
+        y = 25;
+      }
       doc.setFont("helvetica", "bold");
       doc.text("Accommodations and strategies to support this goal", margin, y);
       y += 6;
       doc.setFont("helvetica", "normal");
       const accLines = doc.splitTextToSize(goal.Goal_Accommodations_Strategies || (goal.Core_Subject_Area ? `Subject Area: ${goal.Core_Subject_Area}` : "None specified."), pageWidth - margin * 2);
-      doc.text(accLines, margin, y);
-      y += accLines.length * 5 + 10;
+      for (let i = 0; i < accLines.length; i++) {
+        if (y > pageHeight - 20) {
+          doc.addPage();
+          y = 25;
+        }
+        doc.text(accLines[i], margin, y);
+        y += 5;
+      }
+      y += 5;
     });
   }
 

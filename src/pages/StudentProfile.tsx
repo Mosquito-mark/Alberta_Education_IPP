@@ -231,6 +231,24 @@ export default function StudentProfile() {
     }
   };
 
+  const handleEditGoal = async (goalId: number, updatedGoal: any) => {
+    try {
+      const res = await fetch(`/api/goals/${goalId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedGoal)
+      });
+      if (res.ok) {
+        toast.success("Goal updated successfully");
+        fetchData();
+      } else {
+        toast.error("Failed to update goal");
+      }
+    } catch (error) {
+      toast.error("Network error");
+    }
+  };
+
   const handleSuggestGoal = async () => {
     if (!data || !data.logs || data.logs.length === 0) {
       toast.error("Not enough data", { description: "Need at least one observation to suggest a goal." });
@@ -242,10 +260,12 @@ export default function StudentProfile() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const { student, logs } = data;
       
-      const prompt = `Based on the following student observations and accommodations, suggest a single, specific, measurable, achievable, relevant, and time-bound (SMART) goal for the student.
+      const prompt = `Based on the following student profile, observations, and accommodations, suggest a single, specific, measurable, achievable, relevant, and time-bound (SMART) goal for the student.
       
 Student: ${student.First_Name} ${student.Last_Initial}.
-Grade: ${student.Grade_Level}
+Grade Level: ${student.Grade_Level || 'Not specified'}
+Areas of Need Summary: ${student.Areas_of_Need_Summary || 'Not specified'}
+Medical Conditions: ${student.Medical_Conditions || 'Not specified'}
 
 Observations:
 ${logs.map((l: any) => `- ${l.AI_Scrubbed_Observation || l.Raw_Dictation} (Accommodation: ${l.Recommended_Assistive_Tech || 'None'})`).join('\n')}
@@ -288,10 +308,12 @@ Return ONLY the goal description text, nothing else.`;
       const subjectLogs = logs.filter((l: any) => l.Core_Subject_Area === newGoal.subjectArea);
       const relevantLogs = subjectLogs.length > 0 ? subjectLogs : logs;
 
-      const prompt = `Based on the following student observations, generate 3 short-term objectives to help the student achieve their main goal.
+      const prompt = `Based on the following student profile and observations, generate 3 short-term objectives to help the student achieve their main goal.
 
 Student: ${student.First_Name} ${student.Last_Initial}.
-Grade: ${student.Grade_Level}
+Grade Level: ${student.Grade_Level || 'Not specified'}
+Areas of Need Summary: ${student.Areas_of_Need_Summary || 'Not specified'}
+Medical Conditions: ${student.Medical_Conditions || 'Not specified'}
 Main Goal: ${newGoal.description}
 Subject Area: ${newGoal.subjectArea}
 Target Date: ${newGoal.targetDate}
@@ -396,6 +418,7 @@ Return the output strictly as a JSON object with this exact structure:
               handleSuggestGoal={handleSuggestGoal}
               handleSuggestObjectives={handleSuggestObjectives}
               handleUpdateGoalStatus={handleUpdateGoalStatus}
+              handleEditGoal={handleEditGoal}
               isSuggesting={isSuggesting}
               isSuggestingObjectives={isSuggestingObjectives}
               metadata={metadata}

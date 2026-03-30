@@ -19,6 +19,9 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        "not-started": "bg-goa-stone-light/30 text-goa-stone-dark border-goa-stone-light/50",
+        "in-progress": "bg-goa-prairie/30 text-goa-stone-dark border-goa-prairie/50",
+        "completed": "bg-goa-pasture/30 text-goa-stone-dark border-goa-pasture/50",
       },
     },
     defaultVariants: {

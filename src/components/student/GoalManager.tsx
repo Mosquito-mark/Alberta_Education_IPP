@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Info, Sparkles, Loader2, Target, Plus, CalendarIcon } from "lucide-react";
+import { Info, Sparkles, Loader2, Target, Plus, CalendarIcon, Edit2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Goal } from "@/types";
@@ -35,6 +37,7 @@ interface GoalManagerProps {
   handleSuggestGoal: () => void;
   handleSuggestObjectives: () => void;
   handleUpdateGoalStatus: (goalId: number, status: string) => void;
+  handleEditGoal: (goalId: number, updatedGoal: any) => void;
   isSuggesting: boolean;
   isSuggestingObjectives: boolean;
   metadata: any;
@@ -48,10 +51,41 @@ export function GoalManager({
   handleSuggestGoal,
   handleSuggestObjectives,
   handleUpdateGoalStatus,
+  handleEditGoal,
   isSuggesting,
   isSuggestingObjectives,
   metadata
 }: GoalManagerProps) {
+  const [editingGoal, setEditingGoal] = React.useState<Goal | null>(null);
+  const [editGoalForm, setEditGoalForm] = React.useState<any>({});
+
+  const openEditModal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setEditGoalForm({
+      Goal_Description: goal.Goal_Description || "",
+      Target_Date: goal.Target_Date || "",
+      Core_Subject_Area: goal.Core_Subject_Area || "General",
+      Status: goal.Status || "Not Started",
+      Objective_1_Description: goal.Objective_1_Description || "",
+      Objective_1_Assessment_Procedure: goal.Objective_1_Assessment_Procedure || "",
+      Objective_1_Progress_Review: goal.Objective_1_Progress_Review || "",
+      Objective_2_Description: goal.Objective_2_Description || "",
+      Objective_2_Assessment_Procedure: goal.Objective_2_Assessment_Procedure || "",
+      Objective_2_Progress_Review: goal.Objective_2_Progress_Review || "",
+      Objective_3_Description: goal.Objective_3_Description || "",
+      Objective_3_Assessment_Procedure: goal.Objective_3_Assessment_Procedure || "",
+      Objective_3_Progress_Review: goal.Objective_3_Progress_Review || "",
+      Goal_Accommodations_Strategies: goal.Goal_Accommodations_Strategies || ""
+    });
+  };
+
+  const submitEditGoal = () => {
+    if (editingGoal) {
+      handleEditGoal(editingGoal.Goal_ID, editGoalForm);
+      setEditingGoal(null);
+    }
+  };
+
   return (
     <Card className="rounded-none border shadow-sm border-t-8 border-t-goa-sky">
       <CardHeader>
@@ -234,17 +268,30 @@ export function GoalManager({
             goals.map((goal) => (
               <div key={goal.Goal_ID} className="border rounded-none p-4 space-y-2 border-border hover:border-primary/30 transition-colors bg-card shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <span className="font-bold text-foreground">{goal.Goal_Description}</span>
-                  <Select value={goal.Status} onValueChange={(val) => handleUpdateGoalStatus(goal.Goal_ID, val)}>
-                    <SelectTrigger className="w-[140px] h-8 text-[10px] font-bold uppercase tracking-widest justify-between rounded-none border-border focus:border-goa-sky" aria-label={`Update status for goal: ${goal.Goal_Description}`}>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-none border-border">
-                      <SelectItem value="Not Started">Not Started</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
+                    <span className="font-bold text-foreground">{goal.Goal_Description}</span>
+                    <Badge 
+                      variant={goal.Status === "Completed" ? "completed" : goal.Status === "In Progress" ? "in-progress" : "not-started"} 
+                      className="rounded-none uppercase tracking-widest text-[10px] mt-0.5 w-fit"
+                    >
+                      {goal.Status || "Not Started"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={goal.Status} onValueChange={(val) => handleUpdateGoalStatus(goal.Goal_ID, val)}>
+                      <SelectTrigger className="w-[140px] h-8 text-[10px] font-bold uppercase tracking-widest justify-between rounded-none border-border focus:border-goa-sky" aria-label={`Update status for goal: ${goal.Goal_Description}`}>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-none border-border">
+                        <SelectItem value="Not Started">Not Started</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border-border text-muted-foreground hover:text-foreground" onClick={() => openEditModal(goal)} aria-label={`Edit goal: ${goal.Goal_Description}`}>
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center text-xs text-foreground">
                   <div className="flex items-center gap-4">
@@ -280,6 +327,97 @@ export function GoalManager({
           )}
         </div>
       </CardContent>
+
+      <Dialog open={!!editingGoal} onOpenChange={(open) => !open && setEditingGoal(null)}>
+        <DialogContent className="sm:max-w-[600px] rounded-none border-t-8 border-t-goa-sky max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-primary">Edit Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-desc" className="text-xs font-bold uppercase tracking-widest text-primary">Goal Description</Label>
+              <Textarea 
+                id="edit-goal-desc"
+                value={editGoalForm.Goal_Description || ""}
+                onChange={(e) => setEditGoalForm({...editGoalForm, Goal_Description: e.target.value})}
+                className="rounded-none border-border focus:border-goa-sky"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-subject" className="text-xs font-bold uppercase tracking-widest text-primary">Subject Area</Label>
+                <Select value={editGoalForm.Core_Subject_Area} onValueChange={(v) => setEditGoalForm({...editGoalForm, Core_Subject_Area: v})}>
+                  <SelectTrigger id="edit-subject" className="rounded-none border-border focus:border-goa-sky">
+                    <SelectValue placeholder="Select Subject" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-border">
+                    {metadata.subjects?.map((s: any) => (
+                      <SelectItem key={s.Core_Subject_Area} value={s.Core_Subject_Area}>{s.Core_Subject_Area}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-target-date" className="text-xs font-bold uppercase tracking-widest text-primary">Target Date</Label>
+                <Input 
+                  id="edit-target-date"
+                  type="date" 
+                  value={editGoalForm.Target_Date || ""}
+                  onChange={(e) => setEditGoalForm({...editGoalForm, Target_Date: e.target.value})}
+                  className="rounded-none border-border focus:border-goa-sky"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h4 className="text-sm font-bold text-primary">Short-Term Objectives</h4>
+              
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="space-y-2 p-4 bg-muted/30 border border-border">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Objective {num}</Label>
+                  <Input 
+                    placeholder="Description" 
+                    value={editGoalForm[`Objective_${num}_Description`] || ""}
+                    onChange={(e) => setEditGoalForm({...editGoalForm, [`Objective_${num}_Description`]: e.target.value})}
+                    className="rounded-none border-border focus:border-goa-sky text-xs"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input 
+                      placeholder="Assessment Procedure" 
+                      value={editGoalForm[`Objective_${num}_Assessment_Procedure`] || ""}
+                      onChange={(e) => setEditGoalForm({...editGoalForm, [`Objective_${num}_Assessment_Procedure`]: e.target.value})}
+                      className="rounded-none border-border focus:border-goa-sky text-xs"
+                    />
+                    <Input 
+                      type="date"
+                      placeholder="Review Date" 
+                      value={editGoalForm[`Objective_${num}_Progress_Review`] || ""}
+                      onChange={(e) => setEditGoalForm({...editGoalForm, [`Objective_${num}_Progress_Review`]: e.target.value})}
+                      className="rounded-none border-border focus:border-goa-sky text-xs"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="edit-accommodations" className="text-xs font-bold uppercase tracking-widest text-primary">Accommodations & Strategies</Label>
+              <Textarea 
+                id="edit-accommodations"
+                value={editGoalForm.Goal_Accommodations_Strategies || ""}
+                onChange={(e) => setEditGoalForm({...editGoalForm, Goal_Accommodations_Strategies: e.target.value})}
+                className="rounded-none border-border focus:border-goa-sky"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEditingGoal(null)} className="rounded-none uppercase tracking-widest text-xs font-bold">Cancel</Button>
+              <Button onClick={submitEditGoal} className="bg-goa-sky hover:bg-goa-sky/90 text-white rounded-none uppercase tracking-widest text-xs font-bold">Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

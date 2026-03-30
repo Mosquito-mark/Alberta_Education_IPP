@@ -387,6 +387,38 @@ async function startServer() {
     }
   });
 
+  app.put("/api/goals/:goalId", (req, res) => {
+    const { goalId } = req.params;
+    const { 
+      Goal_Description, Target_Date, Core_Subject_Area, Status,
+      Objective_1_Description, Objective_1_Assessment_Procedure, Objective_1_Progress_Review,
+      Objective_2_Description, Objective_2_Assessment_Procedure, Objective_2_Progress_Review,
+      Objective_3_Description, Objective_3_Assessment_Procedure, Objective_3_Progress_Review,
+      Goal_Accommodations_Strategies
+    } = req.body;
+    try {
+      db.prepare(`
+        UPDATE Measurable_Goals SET
+          Goal_Description = ?, Target_Date = ?, Core_Subject_Area = ?, Status = ?,
+          Objective_1_Description = ?, Objective_1_Assessment_Procedure = ?, Objective_1_Progress_Review = ?,
+          Objective_2_Description = ?, Objective_2_Assessment_Procedure = ?, Objective_2_Progress_Review = ?,
+          Objective_3_Description = ?, Objective_3_Assessment_Procedure = ?, Objective_3_Progress_Review = ?,
+          Goal_Accommodations_Strategies = ?
+        WHERE Goal_ID = ?
+      `).run(
+        Goal_Description, Target_Date, Core_Subject_Area || "General", Status || "Not Started",
+        Objective_1_Description || "", Objective_1_Assessment_Procedure || "", Objective_1_Progress_Review || "",
+        Objective_2_Description || "", Objective_2_Assessment_Procedure || "", Objective_2_Progress_Review || "",
+        Objective_3_Description || "", Objective_3_Assessment_Procedure || "", Objective_3_Progress_Review || "",
+        Goal_Accommodations_Strategies || "",
+        goalId
+      );
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.get("/api/curriculum", (req, res) => {
     const { subject, grade } = req.query;
     let query = "SELECT * FROM Curriculum_Outcomes";
