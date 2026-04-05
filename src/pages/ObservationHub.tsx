@@ -130,15 +130,19 @@ export default function ObservationHub() {
         }
       });
       
-      if (response.text) {
+      if (response.text && response.text.trim().length > 0) {
         setScrubbedText(response.text.trim());
         toast.success("Success", { description: "Observation scrubbed successfully." });
       } else {
-        toast.error("Error", { description: "Failed to scrub observation." });
+        throw new Error("Empty response from AI");
       }
     } catch (e) {
-      console.error(e);
-      toast.error("Error", { description: "Failed to connect to AI service." });
+      console.error("AI Scrubbing Error:", e);
+      toast.error("AI Scrubbing Failed", { 
+        description: "We couldn't automatically rewrite your observation. We've copied your raw text to the edit area below so you can manually refine it." 
+      });
+      // Fallback: populate scrubbedText with rawDictation so they can edit it in the final field
+      setScrubbedText(rawDictation);
     } finally {
       setIsScrubbing(false);
     }

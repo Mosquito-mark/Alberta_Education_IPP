@@ -411,6 +411,7 @@ Return the output strictly as a JSON object with this exact structure:
 
           <div className="md:col-span-2 space-y-6">
             <GoalManager 
+              student={student}
               goals={goals}
               newGoal={newGoal}
               setNewGoal={setNewGoal}

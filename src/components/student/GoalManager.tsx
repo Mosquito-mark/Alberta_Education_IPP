@@ -6,16 +6,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Info, Sparkles, Loader2, Target, Plus, CalendarIcon, Edit2 } from "lucide-react";
+import { Info, Sparkles, Loader2, Target, Plus, CalendarIcon, Edit2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Goal } from "@/types";
+import { Goal, Student } from "@/types";
+import { STRATEGIES_AND_ACCOMMODATIONS, ELIGIBILITY_CATEGORIES } from "@/constants/ippData";
 
 interface GoalManagerProps {
+  student: Student;
   goals: Goal[];
   newGoal: { 
     description: string; 
@@ -44,6 +47,7 @@ interface GoalManagerProps {
 }
 
 export function GoalManager({
+  student,
   goals,
   newGoal,
   setNewGoal,
@@ -86,8 +90,30 @@ export function GoalManager({
     }
   };
 
+  const getStudentStrategies = () => {
+    const code = student.Eligibility_Code?.replace(/\D/g, "");
+    if (!code) return null;
+    return STRATEGIES_AND_ACCOMMODATIONS.find(s => s.code === code);
+  };
+
+  const studentStrategies = getStudentStrategies();
+
+  const handleQuickSelect = (type: "strategies" | "equipment" | "software", value: string, isEdit: boolean = false) => {
+    if (isEdit) {
+      const current = editGoalForm.Goal_Accommodations_Strategies || "";
+      const updated = current ? `${current}\n- ${value}` : `- ${value}`;
+      setEditGoalForm({ ...editGoalForm, Goal_Accommodations_Strategies: updated });
+    } else {
+      const current = newGoal.accommodations || "";
+      const updated = current ? `${current}\n- ${value}` : `- ${value}`;
+      setNewGoal({ ...newGoal, accommodations: updated });
+    }
+    toast.success("Added to accommodations");
+  };
+
   return (
-    <Card className="rounded-none border shadow-sm border-t-8 border-t-goa-sky">
+    <TooltipProvider>
+      <Card className="rounded-none border shadow-sm border-t-8 border-t-goa-sky">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle className="text-xl font-bold text-primary">Measurable Goals (SMART)</CardTitle>
@@ -241,7 +267,45 @@ export function GoalManager({
           </div>
 
           <div className="space-y-2 border-t border-border pt-4 mt-4">
-            <Label htmlFor="goal-accommodations" className="text-primary font-bold text-xs uppercase tracking-widest">Accommodations & Strategies</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="goal-accommodations" className="text-primary font-bold text-xs uppercase tracking-widest">Accommodations & Strategies</Label>
+              {studentStrategies && (
+                <Select onValueChange={(val: string) => {
+                  const [type, value] = val.split(":");
+                  handleQuickSelect(type as any, value);
+                }}>
+                  <SelectTrigger className="h-7 w-fit text-[10px] font-bold uppercase tracking-widest rounded-none border-primary/30 text-primary hover:bg-primary/5">
+                    <SelectValue placeholder="Quick Select (Based on Code)" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-border">
+                    {studentStrategies.strategies.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Strategies</div>
+                        {studentStrategies.strategies.map(s => (
+                          <SelectItem key={`strat:${s}`} value={`strategies:${s}`}>{s}</SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {studentStrategies.equipment.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-t border-border mt-1">Equipment</div>
+                        {studentStrategies.equipment.map(e => (
+                          <SelectItem key={`equip:${e}`} value={`equipment:${e}`}>{e}</SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {studentStrategies.software.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-t border-border mt-1">Software</div>
+                        {studentStrategies.software.map(s => (
+                          <SelectItem key={`soft:${s}`} value={`software:${s}`}>{s}</SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <Textarea 
               id="goal-accommodations"
               placeholder="Accommodations and strategies to support this goal..." 
@@ -402,7 +466,45 @@ export function GoalManager({
             </div>
 
             <div className="space-y-2 pt-2">
-              <Label htmlFor="edit-accommodations" className="text-xs font-bold uppercase tracking-widest text-primary">Accommodations & Strategies</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-accommodations" className="text-xs font-bold uppercase tracking-widest text-primary">Accommodations & Strategies</Label>
+                {studentStrategies && (
+                  <Select onValueChange={(val: string) => {
+                    const [type, value] = val.split(":");
+                    handleQuickSelect(type as any, value, true);
+                  }}>
+                    <SelectTrigger className="h-7 w-fit text-[10px] font-bold uppercase tracking-widest rounded-none border-primary/30 text-primary hover:bg-primary/5">
+                      <SelectValue placeholder="Quick Select" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none border-border">
+                      {studentStrategies.strategies.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Strategies</div>
+                          {studentStrategies.strategies.map(s => (
+                            <SelectItem key={`edit-strat:${s}`} value={`strategies:${s}`}>{s}</SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {studentStrategies.equipment.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-t border-border mt-1">Equipment</div>
+                          {studentStrategies.equipment.map(e => (
+                            <SelectItem key={`edit-equip:${e}`} value={`equipment:${e}`}>{e}</SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {studentStrategies.software.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-t border-border mt-1">Software</div>
+                          {studentStrategies.software.map(s => (
+                            <SelectItem key={`edit-soft:${s}`} value={`software:${s}`}>{s}</SelectItem>
+                          ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <Textarea 
                 id="edit-accommodations"
                 value={editGoalForm.Goal_Accommodations_Strategies || ""}
@@ -419,5 +521,6 @@ export function GoalManager({
         </DialogContent>
       </Dialog>
     </Card>
+    </TooltipProvider>
   );
 }

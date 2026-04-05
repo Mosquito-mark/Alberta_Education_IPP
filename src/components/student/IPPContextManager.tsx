@@ -5,9 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { Edit2, Plus, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Student, SpecializedAssessment } from "@/types";
+import { ELIGIBILITY_CATEGORIES } from "@/constants/ippData";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface IPPContextManagerProps {
   student: Student;
@@ -131,8 +145,54 @@ export function IPPContextManager({ student, onUpdate }: IPPContextManagerProps)
                   <Input id="dob" type="date" value={profileForm.Date_of_Birth} onChange={(e) => setProfileForm({ ...profileForm, Date_of_Birth: e.target.value })} className="rounded-none border-border focus:border-goa-sky" aria-label="Student date of birth" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="eligibility" className="text-[10px] font-bold uppercase tracking-widest text-primary">Eligibility Code</Label>
-                  <Input id="eligibility" placeholder="e.g. Code 42" value={profileForm.Eligibility_Code} onChange={(e) => setProfileForm({ ...profileForm, Eligibility_Code: e.target.value })} className="rounded-none border-border focus:border-goa-sky" aria-label="Student eligibility code" />
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="eligibility" className="text-[10px] font-bold uppercase tracking-widest text-primary">Eligibility Code</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs rounded-none border-border">
+                          <p className="text-[10px]">Select the PASI code that matches the student's primary diagnosis.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Select 
+                    value={profileForm.Eligibility_Code} 
+                    onValueChange={(v) => setProfileForm({ ...profileForm, Eligibility_Code: v })}
+                  >
+                    <SelectTrigger id="eligibility" className="rounded-none border-border focus:border-goa-sky" aria-label="Student eligibility code">
+                      <SelectValue placeholder="Select Code" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none border-border max-h-[300px]">
+                      <TooltipProvider delay={300}>
+                        {ELIGIBILITY_CATEGORIES.map((cat) => (
+                          <div key={cat.code}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="w-full">
+                                  <SelectItem value={`Code ${cat.code}`}>
+                                    Code {cat.code}: {cat.name}
+                                  </SelectItem>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-sm rounded-none border-border p-3 space-y-2">
+                                <div className="space-y-1">
+                                  <p className="font-bold text-[10px] uppercase text-primary">Criteria</p>
+                                  <p className="text-[10px] leading-tight">{cat.criteria}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="font-bold text-[10px] uppercase text-primary">Assessment Requirements</p>
+                                  <p className="text-[10px] leading-tight">{cat.assessment}</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        ))}
+                      </TooltipProvider>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parents" className="text-[10px] font-bold uppercase tracking-widest text-primary">Parents/Guardians</Label>
