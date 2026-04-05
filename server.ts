@@ -210,6 +210,11 @@ async function startServer() {
     insertSubject.run("Social Studies", "Kindergarten", "Recognizing immediate caregivers.", "Area: \"My Family\" / \"My Home.\"", "Area: \"My Body\" / \"Clothing for each season.\"");
     insertSubject.run("Science", "Kindergarten", "Exploring textures and sounds.", "Area: \"Today’s Weather\" / \"Domestic/Wild Animals.\"", "Area: \"Songs and Dances\" / \"Caring for Pets.\"");
 
+    // Grade 6 Vertical Alignment Data from UDL Framework
+    insertSubject.run("English Language Arts", "Gr.6", "Students examine how text genres, forms, and structures support and enhance communication.", "Students analyze how text form and structure clarify information and support connecting with self, others, and the world.", "Select and focus relevant ideas from personal experiences and prior knowledge to understand new ideas and information.");
+    insertSubject.run("Mathematics", "Gr.6", "Students analyze patterns in place value.", "Students investigate magnitude with positive and negative numbers.", "Students analyze positive and negative numbers.");
+    insertSubject.run("Science", "Gr.6", "Students investigate the particle model of matter in relation to the physical properties of solids, liquids, and gases.", "Students investigate how particles of matter behave when heated or cooled and analyze effects on solids, liquids, and gases.", "Students investigate sources and uses of heat energy.");
+
     // Existing sample data
     insertSubject.run("English Language Arts", "Gr.6", "Struggles to read complex texts.", "Reads grade-level texts fluently.", "Reads above grade-level texts with deep comprehension.");
     insertSubject.run("Mathematics", "Gr.6", "Difficulty with basic operations.", "Solves grade-level math problems.", "Excels in advanced problem solving.");

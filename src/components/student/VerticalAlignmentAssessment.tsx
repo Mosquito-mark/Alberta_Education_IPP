@@ -2,9 +2,10 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { TrendingUp, Loader2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VerticalAlignmentOutcome } from "@/types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VerticalAlignmentAssessmentProps {
   verticalAlignmentOutcomes: VerticalAlignmentOutcome[];
@@ -48,13 +49,44 @@ export function VerticalAlignmentAssessment({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {verticalAlignmentOutcomes.map((outcome) => (
-                  <tr key={outcome.Outcome_ID} className="hover:bg-muted/20 transition-colors">
-                    <td className="p-3 font-bold align-top text-primary uppercase text-[10px] tracking-widest">{outcome.Core_Subject_Area}</td>
-                    <td className="p-3 align-top font-bold text-foreground bg-primary/5">{outcome.At_Grade_Level_Descriptor}</td>
-                    <td className="p-3 text-xs text-foreground align-top font-medium italic">{outcome.Below_Grade_Level_Descriptor}</td>
-                    <td className="p-3 text-xs text-foreground align-top font-medium italic">{outcome.Above_Grade_Level_Descriptor}</td>
-                    <td className="p-3 text-right align-top">
+                <TooltipProvider delay={300}>
+                  {verticalAlignmentOutcomes.map((outcome) => (
+                    <tr key={outcome.Outcome_ID} className="hover:bg-muted/20 transition-colors">
+                      <td className="p-3 font-bold align-top text-primary uppercase text-[10px] tracking-widest">{outcome.Core_Subject_Area}</td>
+                      <td className="p-3 align-top font-bold text-foreground bg-primary/5">{outcome.At_Grade_Level_Descriptor}</td>
+                      <td className="p-3 text-xs text-foreground align-top font-medium italic">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help flex items-start gap-1 group">
+                              <span className="line-clamp-3 flex-1">{outcome.Below_Grade_Level_Descriptor}</span>
+                              <Info className="w-3 h-3 mt-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs p-3 rounded-none border-border bg-popover text-popover-foreground shadow-lg">
+                            <div className="space-y-1">
+                              <p className="font-bold text-[10px] uppercase text-primary tracking-widest">Below Grade Level Descriptor</p>
+                              <p className="text-xs leading-relaxed">{outcome.Below_Grade_Level_Descriptor}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </td>
+                      <td className="p-3 text-xs text-foreground align-top font-medium italic">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help flex items-start gap-1 group">
+                              <span className="line-clamp-3 flex-1">{outcome.Above_Grade_Level_Descriptor}</span>
+                              <Info className="w-3 h-3 mt-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs p-3 rounded-none border-border bg-popover text-popover-foreground shadow-lg">
+                            <div className="space-y-1">
+                              <p className="font-bold text-[10px] uppercase text-primary tracking-widest">Above Grade Level Descriptor</p>
+                              <p className="text-xs leading-relaxed">{outcome.Above_Grade_Level_Descriptor}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </td>
+                      <td className="p-3 text-right align-top">
                       <Select 
                         value={verticalEvaluations[outcome.Outcome_ID] || "Not Evaluated"} 
                         onValueChange={(val) => handleUpdateVerticalEvaluation(outcome.Outcome_ID, val)}
@@ -78,6 +110,7 @@ export function VerticalAlignmentAssessment({
                     </td>
                   </tr>
                 ))}
+                </TooltipProvider>
               </tbody>
             </table>
           </div>
